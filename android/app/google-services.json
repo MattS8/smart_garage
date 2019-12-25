@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "419092477295",
+    "firebase_url": "https://smart-garage-door-3d0f1.firebaseio.com",
+    "project_id": "smart-garage-door-3d0f1",
+    "storage_bucket": "smart-garage-door-3d0f1.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:419092477295:android:2447db692f5d3f9c8ee49a",
+        "android_client_info": {
+          "package_name": "com.ms8.smartgaragedoor"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "419092477295-9ipmlgufe8sj74u0p7d0b9si42d8l9us.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.ms8.smartgaragedoor",
+            "certificate_hash": "43ed77d43665038bdb0da6ae9bbc30be8ae9300f"
+          }
+        },
+        {
+          "client_id": "419092477295-d50g3o5c4kk4pu7bpffmisup5i81mj17.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBGmV__Po0qu7dvZ-AZOLX61jBiSgd4EnI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "419092477295-d50g3o5c4kk4pu7bpffmisup5i81mj17.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

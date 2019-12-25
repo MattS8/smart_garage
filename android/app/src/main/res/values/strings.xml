@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">Smart Garage Door</string>
+    <string name="default_web_id">419092477295-51teg9721tpl6l0dujhnhhlnbldg0uuj.apps.googleusercontent.com</string>
+    <string name="open">Open</string>
+    <string name="close">Close</string>
+    <string name="garage_door_is">Garage Door is:</string>
+</resources>
