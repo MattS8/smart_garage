@@ -118,6 +118,13 @@ void toggleGarageDoor() {
 //	based on the current state.
 void loop() {
 	delay(300);
+	if (Firebase.failed()) {
+		Serial.println("streaming error");
+		Serial.println(Firebase.error());
+
+		connectToFirebase();
+	}
+
 	String newStatus = checkStatus();
 
 	if (newStatus != garageStatus)
