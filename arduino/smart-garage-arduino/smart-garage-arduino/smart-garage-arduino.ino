@@ -76,6 +76,7 @@ void sendToFirebase(const String& path, const JsonVariant& obj) {
 	for (int i = 0; i < maxRetries; i++)
 	{
 		Firebase.set(path, obj);
+		delay(retry_delay);
 
 		if (Firebase.failed())
 		{
@@ -110,7 +111,6 @@ void toggleGarageDoor() {
 	Serial.println("Done!");
 }
 
-		
 // First, check status pins to see if there is a change in state for the garage door.
 //	If there is a change, update the status on Firebase and any local state variables.
 // Then, check to see if we have received a new action from Firebase.
@@ -119,6 +119,9 @@ void toggleGarageDoor() {
 void loop() {
 	delay(300);
 	if (Firebase.failed()) {
+		debugMessage = "streaming error - " + Firebase.error();
+		sendDebugMessage();
+
 		Serial.println("streaming error");
 		Serial.println(Firebase.error());
 
@@ -133,10 +136,10 @@ void loop() {
 		Serial.print(newStatus);
 		Serial.println(")");
 		// Update type to reflect an action not initiated via the app
-		// if (newStatus == STATUS_CLOSED)
-		// 	action.type = ACTION_CLOSE;
-		// else if (newStatus == STATUS_OPEN)
-		// 	action.type = ACTION_OPEN;
+		if (newStatus == STATUS_CLOSED)
+			action.type = ACTION_CLOSE;
+		else if (newStatus == STATUS_OPEN)
+			action.type = ACTION_OPEN;
 
 		garageStatus = newStatus;
 
@@ -152,20 +155,38 @@ void loop() {
 		if (action.type == ACTION_CLOSE)
 		{
 			if (garageStatus != STATUS_CLOSED && garageStatus != STATUS_CLOSING)
-			{
+			{	
+				debugMessage = "Sending pulse to CLOSE garage door.";
+				sendDebugMessage();
+
 				toggleGarageDoor();
+			}
+			else 
+			{
+				debugMessage = "Received CLOSE command, but garage door is aleardy closed.";
+				sendDebugMessage();
 			}
 		}
 		else if (action.type == ACTION_OPEN)
 		{
 			if (garageStatus != STATUS_OPEN && garageStatus != STATUS_OPENING)
 			{
+				debugMessage = "Sending pulse to OPEN garage door.";
+				sendDebugMessage();
+
 				toggleGarageDoor();
+			}
+			else 
+			{
+				debugMessage = "Received OPEN command, but garage door is aleardy open.";
+				sendDebugMessage();
 			}
 		}
 		else
 		{
-			Serial.println("Received action was neither \"OPEN\" nor \"CLOSE\".");
+			debugMessage = ERR_ACTION;
+			sendDebugMessage();
+			Serial.println(ERR_ACTION);
 		}
 	}
 }
@@ -206,13 +227,18 @@ bool hasReceivedFirebaseAction() {
 	FirebaseObject event = Firebase.readEvent();
 	if (event.getString("type") == "put") 
 	{
+		Serial.print("Received FirebaseObject: ");
+		Serial.print(event.getString("data"));
+		Serial.print(" | ");
+		Serial.println(event.getString("data/type"));
+
 		action.type = event.getString();
 		if (action.type == "") {
-			Serial.println("\ttrying data...");
+			//Serial.println("\ttrying data...");
 			action.type = event.getString("data");
 		}
 		if (action.type == "") {
-			Serial.println("\ttrying data/type...");
+			//Serial.println("\ttrying data/type...");
 			action.type = event.getString("data/type");
 		}
 		return true;
@@ -221,4 +247,16 @@ bool hasReceivedFirebaseAction() {
 	{
 		return false;
 	}
+}
+
+
+// Debug
+FirebaseObject getDebugObject() {
+	return FirebaseObject(
+		String("{\"meesage\":\"" + debugMessage + "\"}").c_str()
+		);
+}
+
+void sendDebugMessage() {
+	sendToFirebase(PATH_DEBUG + millis(), getDebugObject().getJsonVariant("/"));
 }
