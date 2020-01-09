@@ -214,8 +214,14 @@ void loop() {
 	if (event.getString("type") != "put")
 		return;
 
+
+	if (ignoreListener) 
+	{
+		
+	}
+
 	// Received a valid event 
-	String temp = event.getString(FIREBASE_ACTION_TYPE);
+	String temp = event.getString(FIREBASE_DATA + "type");
 	if (temp != "")
 	{
 		action.type = temp;
@@ -277,18 +283,25 @@ void loop() {
 	else
 	{
 		Serial.println("Event wasn't an action.. assuming option event");
-		Serial.println(event.getString(FIREBASE_OPTIONS));
 
 		AutoCloseOptions tempOptions;
-		tempOptions.enabled = event.getBool(FIREBASE_OPTIONS + "/enabled");
+		tempOptions.enabled = event.getBool(FIREBASE_DATA + "enabled");
 		if (!event.success())
 			tempOptions.enabled = autoCloseOptions.enabled;
-		tempOptions.timeout = event.getFloat(FIREBASE_OPTIONS + "/timeout");
+		tempOptions.timeout = event.getFloat(FIREBASE_DATA + "timeout");
 		if (!event.success())
 			tempOptions.timeout = autoCloseOptions.timeout;
-		tempOptions.warningTimeout = event.getFloat(FIREBASE_OPTIONS + "/warningTimeout");
+		tempOptions.warningTimeout = event.getFloat(FIREBASE_DATA + "warningTimeout");
 		if (!event.success())
 			tempOptions.warningTimeout = autoCloseOptions.warningTimeout;
+
+		Serial.println("AutoClose Options:");
+		Serial.print("\tenabled: ");
+		Serial.println(autoCloseOptions.enabled);
+		Serial.print("\ttimeout: ");
+		Serial.println(autoCloseOptions.timeout);
+		Serial.print("\twarningTimeout: ");
+		Serial.println(autoCloseOptions.warningTimeout);
 	}
 
 	//if (hasReceivedFirebaseAction()) 
@@ -406,5 +419,5 @@ FirebaseObject getDebugObject() {
 }
 
 void sendDebugMessage() {
-	sendToFirebase(PATH_DEBUG + millis(), getDebugObject().getJsonVariant("/"));
+	sendToFirebase(PATH_BASE + PATH_DEBUG + millis(), getDebugObject().getJsonVariant("/"));
 }

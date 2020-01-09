@@ -45,10 +45,9 @@ static const String ACTION_CLOSE = "CLOSE";
 static const String ACTION_STOP_AUTO_CLOSE = "STOP_AUTO_CLOSE";
 
 static const String PATH_BASE = "/garages/home_garage/";
-static const String PATH_DEBUG = "/debug/";
+static const String PATH_DEBUG = "debug/";
 
-static const String FIREBASE_ACTION_TYPE = "data/action/type";
-static const String FIREBASE_OPTIONS = "data/options/";
+static const String FIREBASE_DATA = "data/";
 
 
 static const String JSON_TYPE = "\"type\": \"";
