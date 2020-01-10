@@ -185,7 +185,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, CompoundButton.O
         autoCloseOptionsBinding.tvWarningAfterValue.isEnabled = isChecked && warningEnabled
         autoCloseOptionsBinding.tvWarningAfter.isEnabled = isChecked && warningEnabled
         autoCloseOptionsBinding.sbWarningAfter.isEnabled = isChecked && warningEnabled
-        autoCloseOptionsBinding.swWarnBeforeClosing.isEnabled = isChecked && warningEnabled
+        autoCloseOptionsBinding.swWarnBeforeClosing.isEnabled = isChecked
 
         // Send firebase update
         FirebaseDatabaseFunctions.sendAutoCloseOption(isChecked, timeout, if (warningEnabled) warningTimeout else 0)
