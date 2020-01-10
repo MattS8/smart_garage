@@ -138,10 +138,10 @@ void loop() {
 	// ---- Check "Auto Close" ----
 	if (autoCloseOptions.enabled)
 	{
-		if (autoClose.warningTime != 0 && autoClose.warningTime >= millis())
+		if (autoClose.warningTime != 0 && millis() >= autoClose.warningTime)
 			sendAutoCloseWarning();
 
-		if (autoClose.closeTime != 0 && autoClose.closeTime >= millis())
+		if (autoClose.closeTime != 0 && millis() >= autoClose.closeTime)
 			autoCloseDoor();
 	}
 
