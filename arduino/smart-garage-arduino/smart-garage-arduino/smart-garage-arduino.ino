@@ -300,7 +300,7 @@ void handleFirstTimeListenerEvent(FirebaseObject event)
 
 	isFirstTimeListenerEvent = false;
 
-	handleOptionsChange(event, FIREBASE_DATA + "options/");
+	handleOptionsChange(event, FIREBASE_DATA + "auto_close_options/");
 }
 
 void handleNewAction(String actionStr)
