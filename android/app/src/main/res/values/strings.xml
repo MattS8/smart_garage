@@ -4,4 +4,21 @@
     <string name="open">Open</string>
     <string name="close">Close</string>
     <string name="garage_door_is">Garage Door is:</string>
+    <string name="garage_open_title">Garage Door Opened</string>
+    <string name="garage_door_reopened_message">The garage door was reopened after attempting to close it!</string>
+    <string name="garage_closed_title">Garage Door Closed</string>
+    <string name="garage_door_closed_message">The garage door was closed after attempting to open it!</string>
+    <string name="error">Error</string>
+    <string name="error_occurred_message">An error has occurred:</string>
+    <string name="appwidget_text">EXAMPLE</string>
+    <string name="add_widget">Add widget</string>
+    <string name="light_theme">Light Theme</string>
+    <string name="dark_theme">Dark Theme</string>
+    <string name="channel_name">Garage Door Standard Priority</string>
+    <string name="channel_description">Standard priority for garage door notifications.</string>
+    <string name="options">Options</string>
+    <string name="auto_close">Auto Close</string>
+    <string name="warn_before_closing">Warn Before Closing</string>
+    <string name="close_after">Close After:</string>
+    <string name="send_warning_after">Send Warning After:</string>
 </resources>

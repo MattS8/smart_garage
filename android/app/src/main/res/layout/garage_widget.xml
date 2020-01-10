@@ -1,0 +1,80 @@
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@android:color/transparent"
+        android:padding="@dimen/widget_margin"
+        android:orientation="vertical"
+
+        tools:background="@color/colorBackgroundDark"
+        >
+
+        <TextView
+            android:id="@+id/tvStatusLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:layout_gravity="center_horizontal"
+            android:background="@android:color/transparent"
+            android:contentDescription="@string/garage_door_is"
+            android:text="@string/garage_door_is"
+            android:textColor="#ffffff"
+            android:textSize="24sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:background="@android:color/transparent"
+            android:contentDescription="@string/garage_door_is"
+            android:textColor="#ffffff"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:gravity="center_horizontal"
+            android:shadowColor="@android:color/black"
+            android:shadowDx="1.5"
+            android:shadowDy="1.3"
+            android:shadowRadius="1.6"
+
+            tools:text="OPEN"
+            tools:textColor="@color/colorOpen"
+            />
+
+
+        <LinearLayout
+            android:id="@+id/buttonLayout"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_gravity="center_horizontal">
+            <Button
+                android:id="@+id/btnClose"
+                style="@style/Widget.AppCompat.Button.Colored"
+                android:backgroundTint="@color/colorClose"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minHeight="75dp"
+                android:minWidth="150dp"
+                android:text="@string/close"
+                app:backgroundTint="@color/colorClose" />
+
+            <Button
+                android:id="@+id/btnOpen"
+                style="@style/Widget.AppCompat.Button.Colored"
+                android:backgroundTint="@color/colorOpen"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minHeight="75dp"
+                android:minWidth="150dp"
+                android:text="@string/open"
+                app:backgroundTint="@color/colorOpen"
+                android:layout_marginStart="8dp"
+                />
+        </LinearLayout>
+
+    </LinearLayout>
+</layout>

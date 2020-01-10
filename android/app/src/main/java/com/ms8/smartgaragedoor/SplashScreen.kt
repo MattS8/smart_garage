@@ -2,13 +2,13 @@ package com.ms8.smartgaragedoor
 
 import android.content.Intent
 import android.graphics.drawable.Drawable
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import android.view.View
 import android.view.animation.AccelerateDecelerateInterpolator
 import android.view.animation.AccelerateInterpolator
 import android.view.animation.DecelerateInterpolator
+import androidx.appcompat.app.AppCompatActivity
 import androidx.databinding.DataBindingUtil
 import androidx.databinding.Observable
 import androidx.vectordrawable.graphics.drawable.Animatable2Compat
@@ -16,14 +16,13 @@ import androidx.vectordrawable.graphics.drawable.AnimatedVectorDrawableCompat
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
-import com.google.firebase.auth.FirebaseAuth
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
 import com.google.android.material.snackbar.Snackbar
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
 import com.ms8.smartgaragedoor.databinding.ActivitySplashBinding
-import java.lang.Exception
 
 
 class SplashScreen : AppCompatActivity(), View.OnClickListener {
@@ -58,6 +57,9 @@ class SplashScreen : AppCompatActivity(), View.OnClickListener {
 
         progressView = AnimatedVectorDrawableCompat.create(this, R.drawable.av_progress)
         progressView?.registerAnimationCallback(garageProgressViewCallback)
+
+        // Create notification channel
+        GarageWidgetService.createNotificationChannel(this)
     }
 
     override fun onStart() {
@@ -211,7 +213,7 @@ class SplashScreen : AppCompatActivity(), View.OnClickListener {
     }
 
     private fun nextActivity() {
-       startActivity(Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP))
+       startActivity(Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP).putExtra("EXIT", true))
     }
 
     companion object {

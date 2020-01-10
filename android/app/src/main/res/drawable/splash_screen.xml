@@ -10,7 +10,8 @@
 
         <bitmap
             android:src="@drawable/garage_icon"
-            android:gravity="center"/>
+            android:gravity="center"
+            />
 
     </item>
 
