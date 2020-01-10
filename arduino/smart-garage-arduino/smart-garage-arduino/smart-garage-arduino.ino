@@ -9,7 +9,7 @@
 
 String garageStatus = STATUS_OPEN;				// Global variable for current state of garage door
 GarageAction action;							// Global variable for received actions		
-bool ignoreListener = true;						// Initial result from firebase listener should be ignored	
+bool isFirstTimeListenerEvent = true;						// Initial result from firebase listener should be ignored	
 AutoCloseOptions autoCloseOptions;				// Options related to the "auto close" functionality
 AutoClose autoClose;							// Variables pertaining to the "auto close" functionality
 
@@ -28,7 +28,7 @@ void setup() {
 	Serial.print("initial status is ");
 	Serial.println(garageStatus);
 
-	ignoreListener = true;
+	isFirstTimeListenerEvent = true;
 
 	// Initialize "auto close" options
 	autoCloseOptions.enabled = false;
@@ -73,10 +73,6 @@ void connectToFirebase() {
 
 	delay(500);
 
-	//FirebaseObject initialAction = FirebaseObject(actionToJson(ACTION_CLOSE).c_str());
-	//sendToFirebase(PATH_ACTION, initialAction.getJsonVariant("/"));
-	//delay(350);
-
 	if (Firebase.failed()) {
 		Serial.println(F("Failed to set initial action..."));
 		ESP.reset();
@@ -110,11 +106,6 @@ void sendToFirebase(const String& path, const JsonVariant& obj) {
 	}
 }
 
-String actionToJson(String actionType) {
-
-	return "{" + JSON_TYPE + actionType + "\"}";
-}
-
 String statusToJson(String statusType) {
 	return "{" + JSON_TYPE + statusType + "\"}";
 }
@@ -136,76 +127,23 @@ void loop() {
 	delay(300);
 
 	// ---- Handle Firebase Crash ----
-	if (Firebase.failed()) {
-		debugMessage = "streaming error - " + Firebase.error();
-		sendDebugMessage();
-
-		Serial.println("streaming error");
-		Serial.println(Firebase.error());
-
-		ignoreListener = true;
-
-		connectToFirebase();
-	}
+	if (Firebase.failed())
+		handleFirebaseFailure();
 
 	// ---- Update Status ----
-	String newStatus = checkStatus();
+	String newStatus = getStatus();
 	if (newStatus != garageStatus)
-	{
-		Serial.print("New status detected! (");
-		Serial.print(newStatus);
-		Serial.println(")");
-		// Update type to reflect an action not initiated via the app
-		if (newStatus == STATUS_CLOSED)
-			action.type = ACTION_CLOSE;
-		else if (newStatus == STATUS_OPEN)
-			action.type = ACTION_OPEN;
-
-		// Update "auto close" functionality
-		if (newStatus == STATUS_OPEN || newStatus == STATUS_OPENING)
-		{
-			autoClose.hasSentWarning = false;
-			autoClose.closeTime = millis() + autoCloseOptions.timeout;
-			autoClose.warningTime = millis() + autoCloseOptions.warningTimeout;
-		}
-		else
-		{
-			autoClose.closeTime = 0;
-			autoClose.warningTime = 0;
-		}
-
-		garageStatus = newStatus;
-
-		// Update Firebase status
-		FirebaseObject statusObject = FirebaseObject(statusToJson(garageStatus).c_str());
-		sendToFirebase(PATH_BASE + "status", statusObject.getJsonVariant("/"));
-	}
+		updateStatus(newStatus);
 
 	// ---- Check "Auto Close" ----
 	if (autoCloseOptions.enabled)
 	{
-		if (!autoClose.warningTime != 0 && autoClose.warningTime >= millis())
-		{
-			autoClose.warningTime = 0;
-			// todo - send warning notification
+		if (autoClose.warningTime != 0 && autoClose.warningTime >= millis())
+			sendAutoCloseWarning();
 
-			debugMessage = "Sending warning message regarding auto close.";
-			sendDebugMessage();
-		}
-
-		if (autoClose.closeTime != 0 && autoClose.closeTime >= millis()) 
-		{
-			autoClose.closeTime = 0;
-			if (garageStatus != STATUS_CLOSED && garageStatus != STATUS_CLOSING)
-			{
-				toggleGarageDoor();
-
-				debugMessage = "Sending pulse to CLOSE garage door (auto close).";
-				sendDebugMessage();
-			}
-		}
+		if (autoClose.closeTime != 0 && autoClose.closeTime >= millis())
+			autoCloseDoor();
 	}
-
 
 	// ---- Handle Firebase Listener ----
 	if (!Firebase.available())
@@ -214,145 +152,33 @@ void loop() {
 	if (event.getString("type") != "put")
 		return;
 
-
-	if (ignoreListener) 
-	{
-		
-	}
-
-	// Received a valid event 
-	String temp = event.getString(FIREBASE_DATA + "type");
-	if (temp != "")
-	{
-		action.type = temp;
-		if (ignoreListener) 
-		{
-			ignoreListener = false;
-			debugMessage = "Ignoring first event from firebase.";
-			sendDebugMessage();
-			return;
-		}
-
-		Serial.print("Received Action: ");
-		Serial.println(action.type);
-		if (action.type == ACTION_CLOSE)
-		{
-			if (garageStatus != STATUS_CLOSED && garageStatus != STATUS_CLOSING)
-			{	
-				toggleGarageDoor();
-
-				debugMessage = "Sending pulse to CLOSE garage door.";
-				sendDebugMessage();
-			}
-			else 
-			{
-				debugMessage = "Received CLOSE command, but garage door is aleardy closed.";
-				sendDebugMessage();
-			}
-		}
-		else if (action.type == ACTION_OPEN)
-		{
-			if (garageStatus != STATUS_OPEN && garageStatus != STATUS_OPENING)
-			{
-				toggleGarageDoor();
-
-				debugMessage = "Sending pulse to OPEN garage door.";
-				sendDebugMessage();
-			}
-			else 
-			{
-				debugMessage = "Received OPEN command, but garage door is aleardy open.";
-				sendDebugMessage();
-			}
-		}
-		else if (action.type == ACTION_STOP_AUTO_CLOSE)
-		{
-			autoClose.closeTime = 0;
-			autoClose.warningTime = 0;
-
-			debugMessage = "Stopping the garage from auto closing on user's behest.";
-			sendDebugMessage();
-		}
-		else
-		{
-			debugMessage = ERR_ACTION;
-			sendDebugMessage();
-			Serial.println(ERR_ACTION);
-		}
-	}
+	if (isFirstTimeListenerEvent)
+		handleFirstTimeListenerEvent(event);
 	else
 	{
-		Serial.println("Event wasn't an action.. assuming option event");
+		String actionStr = event.getString(FIREBASE_DATA + "type");
 
-		AutoCloseOptions tempOptions;
-		tempOptions.enabled = event.getBool(FIREBASE_DATA + "enabled");
-		if (!event.success())
-			tempOptions.enabled = autoCloseOptions.enabled;
-		tempOptions.timeout = event.getFloat(FIREBASE_DATA + "timeout");
-		if (!event.success())
-			tempOptions.timeout = autoCloseOptions.timeout;
-		tempOptions.warningTimeout = event.getFloat(FIREBASE_DATA + "warningTimeout");
-		if (!event.success())
-			tempOptions.warningTimeout = autoCloseOptions.warningTimeout;
-
-		Serial.println("AutoClose Options:");
-		Serial.print("\tenabled: ");
-		Serial.println(autoCloseOptions.enabled);
-		Serial.print("\ttimeout: ");
-		Serial.println(autoCloseOptions.timeout);
-		Serial.print("\twarningTimeout: ");
-		Serial.println(autoCloseOptions.warningTimeout);
+		if (event.success())
+			handleNewAction(actionStr);
+		else
+			handleOptionsChange(event, FIREBASE_DATA);
 	}
-
-	//if (hasReceivedFirebaseAction()) 
-	//{
-	//	if (bIgnoreListener) {
-	//		bIgnoreListener = false;
-	//		Serial.println("Ignoring first event from firebase");
-	//	}
-
-	//	Serial.print("Received Action: ");
-	//	Serial.println(action.type);
-	//	if (action.type == ACTION_CLOSE)
-	//	{
-	//		if (garageStatus != STATUS_CLOSED && garageStatus != STATUS_CLOSING)
-	//		{	
-	//			debugMessage = "Sending pulse to CLOSE garage door.";
-	//			sendDebugMessage();
-
-	//			toggleGarageDoor();
-	//		}
-	//		else 
-	//		{
-	//			debugMessage = "Received CLOSE command, but garage door is aleardy closed.";
-	//			sendDebugMessage();
-	//		}
-	//	}
-	//	else if (action.type == ACTION_OPEN)
-	//	{
-	//		if (garageStatus != STATUS_OPEN && garageStatus != STATUS_OPENING)
-	//		{
-	//			debugMessage = "Sending pulse to OPEN garage door.";
-	//			sendDebugMessage();
-
-	//			toggleGarageDoor();
-	//		}
-	//		else 
-	//		{
-	//			debugMessage = "Received OPEN command, but garage door is aleardy open.";
-	//			sendDebugMessage();
-	//		}
-	//	}
-	//	else
-	//	{
-	//		debugMessage = ERR_ACTION;
-	//		sendDebugMessage();
-	//		Serial.println(ERR_ACTION);
-	//	}
-	//}
 }
 
-String checkStatus() {
+void handleFirebaseFailure()
+{
+	debugMessage = "streaming error - " + Firebase.error();
+	sendDebugMessage();
+
+	Serial.println("streaming error");
+	Serial.println(Firebase.error());
+
+	isFirstTimeListenerEvent = true;
+
+	connectToFirebase();
+}
+
+String getStatus() {
 	String retStr = "";
 	int openPin = digitalRead(PIN_STATUS_OPEN);
 	int closePin = digitalRead(PIN_STATUS_CLOSE);
@@ -378,6 +204,62 @@ String checkStatus() {
 		{
 			return garageStatus;
 		}
+	}
+}
+
+void updateStatus(String newStatus)
+{
+	// Debug
+	Serial.print("New status detected! (");
+	Serial.print(newStatus);
+	Serial.println(")");
+
+	// Update type to reflect an action not initiated via the app
+	if (newStatus == STATUS_CLOSED)
+		action.type = ACTION_CLOSE;
+	else if (newStatus == STATUS_OPEN)
+		action.type = ACTION_OPEN;
+
+	// Update "auto close" functionality
+	if (newStatus == STATUS_OPEN || newStatus == STATUS_OPENING)
+	{
+		autoClose.hasSentWarning = false;
+		autoClose.closeTime = millis() + autoCloseOptions.timeout;
+		autoClose.warningTime = millis() + autoCloseOptions.warningTimeout;
+	}
+	else
+	{
+		autoClose.closeTime = 0;
+		autoClose.warningTime = 0;
+	}
+
+	garageStatus = newStatus;
+
+	// Update Firebase status
+	FirebaseObject statusObject = FirebaseObject(statusToJson(garageStatus).c_str());
+	sendToFirebase(PATH_BASE + "status", statusObject.getJsonVariant("/"));
+}
+
+void sendAutoCloseWarning()
+{
+	autoClose.warningTime = 0;
+
+	// todo - send warning notification
+
+	debugMessage = "Sending warning message regarding auto close.";
+	sendDebugMessage();
+}
+
+void autoCloseDoor()
+{
+	autoClose.closeTime = 0;
+
+	if (garageStatus != STATUS_CLOSED && garageStatus != STATUS_CLOSING)
+	{
+		toggleGarageDoor();
+
+		debugMessage = "Sending pulse to CLOSE garage door (auto close).";
+		sendDebugMessage();
 	}
 }
 
@@ -408,6 +290,97 @@ bool hasReceivedFirebaseAction() {
 	{
 		return false;
 	}
+}
+
+void handleFirstTimeListenerEvent(FirebaseObject event)
+{
+	// todo - HANDLE IT
+	debugMessage = "Getting first-time Firebase event.";
+	sendDebugMessage();
+
+	isFirstTimeListenerEvent = false;
+
+	handleOptionsChange(event, FIREBASE_DATA + "options/");
+}
+
+void handleNewAction(String actionStr)
+{
+	action.type = actionStr;
+
+	Serial.print("Received Action: ");
+	Serial.println(action.type);
+	if (action.type == ACTION_CLOSE)
+	{
+		if (garageStatus != STATUS_CLOSED && garageStatus != STATUS_CLOSING)
+		{
+			toggleGarageDoor();
+
+			debugMessage = "Sending pulse to CLOSE garage door.";
+			sendDebugMessage();
+		}
+		else
+		{
+			debugMessage = "Received CLOSE command, but garage door is aleardy closed.";
+			sendDebugMessage();
+		}
+	}
+	else if (action.type == ACTION_OPEN)
+	{
+		if (garageStatus != STATUS_OPEN && garageStatus != STATUS_OPENING)
+		{
+			toggleGarageDoor();
+
+			debugMessage = "Sending pulse to OPEN garage door.";
+			sendDebugMessage();
+		}
+		else
+		{
+			debugMessage = "Received OPEN command, but garage door is aleardy open.";
+			sendDebugMessage();
+		}
+	}
+	else if (action.type == ACTION_STOP_AUTO_CLOSE)
+	{
+		autoClose.closeTime = 0;
+		autoClose.warningTime = 0;
+
+		debugMessage = "Stopping the garage from auto closing on user's behest.";
+		sendDebugMessage();
+	}
+	else
+	{
+		debugMessage = ERR_ACTION;
+		sendDebugMessage();
+		Serial.println(ERR_ACTION);
+	}
+}
+
+void handleOptionsChange(FirebaseObject event, String basePath)
+{
+	Serial.println("Event wasn't an action.. assuming option event");
+
+	AutoCloseOptions tempOptions;
+	tempOptions.enabled = event.getBool(basePath + "enabled");
+	if (!event.success())
+		tempOptions.enabled = autoCloseOptions.enabled;
+	tempOptions.timeout = event.getFloat(basePath + "timeout");
+	if (!event.success())
+		tempOptions.timeout = autoCloseOptions.timeout;
+	tempOptions.warningTimeout = event.getFloat(basePath + "warningTimeout");
+	if (!event.success())
+		tempOptions.warningTimeout = autoCloseOptions.warningTimeout;
+
+	autoCloseOptions.enabled = tempOptions.enabled;
+	autoCloseOptions.timeout = tempOptions.timeout;
+	autoCloseOptions.warningTimeout = tempOptions.warningTimeout;
+
+	Serial.println("AutoClose Options:");
+	Serial.print("\tenabled: ");
+	Serial.println(autoCloseOptions.enabled);
+	Serial.print("\ttimeout: ");
+	Serial.println(autoCloseOptions.timeout);
+	Serial.print("\twarningTimeout: ");
+	Serial.println(autoCloseOptions.warningTimeout);
 }
 
 
