@@ -46,7 +46,7 @@ static const String ACTION_CLOSE = "CLOSE";
 static const String ACTION_STOP_AUTO_CLOSE = "STOP_AUTO_CLOSE";
 
 static const String PATH_BASE = "/garages/home_garage/";
-static const String PATH_DEBUG = "debug/";
+static const String PATH_DEBUG = "debug/controller/";
 
 static const String FIREBASE_DATA = "data/";
 
