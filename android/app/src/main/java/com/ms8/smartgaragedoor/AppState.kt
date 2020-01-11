@@ -1,9 +1,8 @@
 package com.ms8.smartgaragedoor
 
+import android.hardware.usb.UsbEndpoint
 import android.util.Log
 import androidx.databinding.ObservableField
-import java.lang.Exception
-import java.util.*
 
 object AppState {
     fun statusFromString(statusStr: String): GarageStatus {
@@ -24,6 +23,10 @@ object AppState {
             {
                 GarageStatus.OPENING
             }
+            GarageStatus.PAUSED.name ->
+            {
+                GarageStatus.PAUSED
+            }
             else ->
             {
                 Log.e(TAG, "statusFromString - not a valid string... ($statusStr)")
@@ -32,18 +35,30 @@ object AppState {
         }
     }
 
+    fun colorFromStatus(garageStatus: GarageStatus): Int {
+        return when (garageStatus) {
+            GarageStatus.CLOSED -> R.color.colorClose
+            GarageStatus.CLOSING -> R.color.colorClosing
+            GarageStatus.OPEN -> R.color.colorOpen
+            GarageStatus.OPENING -> R.color.colorOpening
+            GarageStatus.PAUSED -> R.color.colorPaused
+        }
+    }
+
     val garageData = GarageData()
     val errorData = ErrorData()
 
     data class GarageData (
-        val status : ObservableField<GarageStatus?> = ObservableField()
+        val status : ObservableField<GarageStatus?> = ObservableField(),
+        val previousStatus : ObservableField<GarageStatus?> = ObservableField(),
+        val autoCloseOptions : ObservableField<FirebaseDatabaseFunctions.AutoCloseOptions> = ObservableField()
     )
 
     data class ErrorData (
         var garageStatusError : ObservableField<Exception?> = ObservableField()
     )
 
-    enum class GarageStatus {CLOSED, CLOSING, OPEN, OPENING}
+    enum class GarageStatus {CLOSED, CLOSING, OPEN, OPENING, PAUSED}
 
     const val TAG = "AppState"
 }

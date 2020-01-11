@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <LinearLayout
+        android:id="@+id/autoCloseOptionsRoot"
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        >
+
+        <Space
+            android:id="@+id/spaceStatusBar"
+            android:layout_width="1dp"
+            android:layout_height="wrap_content"/>
+
+        <TextView
+            android:id="@+id/tvOptionsTitle"
+            style="@style/TextAppearance.AppCompat.Headline"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="sans-serif-thin"
+            android:text="@string/options"
+            android:textSize="36sp"
+            android:layout_marginTop="12dp"
+            android:layout_marginEnd="12dp"
+            android:layout_marginBottom="8dp"
+            />
+
+        <Switch
+            android:id="@+id/swAutoClose"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/option_spacing"
+            android:switchPadding="24dp"
+            android:text="@string/auto_close"
+            android:textOff="@string/auto_close"
+            android:textOn="@string/auto_close"
+            style="@style/TextAppearance.MaterialComponents.Body1"
+            android:textSize="14sp"
+            />
+
+        <LinearLayout
+            android:id="@+id/layoutCloseAfter"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/option_inner_spacing"
+            android:layout_marginTop="@dimen/option_spacing"
+            >
+
+            <TextView
+                android:id="@+id/tvCloseAfter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/close_after"
+                style="@style/TextAppearance.MaterialComponents.Body1"
+                android:textSize="14sp"
+                />
+
+            <TextView
+                android:id="@+id/tvCloseAfterValue"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                tools:text="30 minutes"
+                android:layout_marginStart="12dp"
+                android:layout_marginEnd="4dp"
+                />
+        </LinearLayout>
+
+        <SeekBar
+            android:id="@+id/sbCloseAfter"
+            style="@style/Widget.AppCompat.SeekBar.Discrete"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="7"
+            android:progress="0"
+            android:layout_marginTop="4dp"
+            android:layout_marginStart="@dimen/option_inner_spacing"
+            />
+
+        <Switch
+            android:id="@+id/swWarnBeforeClosing"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+
+            android:switchPadding="24dp"
+            android:text="@string/warn_before_closing"
+            android:textOff="@string/auto_close"
+            android:textOn="@string/auto_close"
+            style="@style/TextAppearance.MaterialComponents.Body1"
+            android:textSize="14sp"
+            />
+
+        <LinearLayout
+            android:id="@+id/layoutWarningAfter"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/option_spacing"
+            android:layout_marginStart="@dimen/option_inner_spacing"
+            >
+
+            <TextView
+                android:id="@+id/tvWarningAfter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/send_warning_after"
+                style="@style/TextAppearance.MaterialComponents.Body1"
+                android:textSize="14sp"
+                />
+
+            <TextView
+                android:id="@+id/tvWarningAfterValue"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                tools:text="30 minutes"
+                android:layout_marginStart="12dp"
+                android:layout_marginEnd="4dp"
+                />
+
+        </LinearLayout>
+
+        <SeekBar
+            android:id="@+id/sbWarningAfter"
+            style="@style/Widget.AppCompat.SeekBar.Discrete"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="7"
+            android:progress="0"
+            android:layout_marginTop="4dp"
+            android:layout_marginStart="@dimen/option_inner_spacing"
+            />
+
+
+        <Switch
+            android:id="@+id/swTheme"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            style="@style/TextAppearance.MaterialComponents.Body1"
+            android:textSize="14sp"
+            android:layout_marginTop="22dp"
+            android:layout_marginBottom="32dp"
+            android:switchPadding="8dp"
+            android:text="@string/light_theme"
+            android:textOff="@string/light_theme"
+            android:textOn="@string/dark_theme" />
+
+    </LinearLayout>
+</layout>

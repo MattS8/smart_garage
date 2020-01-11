@@ -10,6 +10,19 @@ typedef struct GarageAction {
 	String uid;
 } GarageAction;
 
+typedef struct AutoCloseOptions {
+	bool enabled;						// Determines whether to run "auto close" functionality
+	long timeout;						// Time before garage door closes
+	bool warningEnabled;				// Determines whether to warn users before closing door
+	long warningTimeout;				// Time before warning is sent to users
+} AutoCloseOptions;
+
+typedef struct AutoClose {
+	long closeTime;
+	long warningTime;
+	bool hasSentWarning;
+} AutoClose;
+
 static const String FIREBASE_HOST = "smart-garage-door-3d0f1.firebaseio.com";
 static const String FIREBASE_AUTH = "7qlG7H7EERalI9cqSAJkM4EfZrw2jI3lwenO6dBV";
 
@@ -30,19 +43,15 @@ static const String ERR_ACTION = "Received action was neither \"OPEN\" nor \"CLO
 static const String ACTION_NONE = "NONE";
 static const String ACTION_OPEN = "OPEN";
 static const String ACTION_CLOSE = "CLOSE";
+static const String ACTION_STOP_AUTO_CLOSE = "STOP_AUTO_CLOSE";
 
-static const String PATH_ACTION = "/garages/home_garage/action";
-static const String PATH_STATUS = "/garages/home_garage/status";
-static const String PATH_DEBUG = "/garages/home_garage/debug/";
+static const String PATH_BASE = "/garages/home_garage/";
+static const String PATH_DEBUG = "debug/controller/";
 
-static const String JSON_ACTION_1 = "{\"timestamp\": \"";
-static const String JSON_ACTION_2 = "\", \"type\": \"";
-static const String JSON_ACTION_3 = "\", \"uid\": \"";
-static const String JSON_ACTION_4 = "\"}";
+static const String FIREBASE_DATA = "data/";
+
 
 static const String JSON_TYPE = "\"type\": \"";
-
-static const String JSON_STATUS_1 = "{\"type\": \"";
 
 static const String NONE = "_none_";
 

@@ -2,12 +2,16 @@ package com.ms8.smartgaragedoor
 
 import android.util.Log
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.database.*
-import java.lang.Exception
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
 import java.text.SimpleDateFormat
 import java.util.*
 
 object FirebaseDatabaseFunctions {
+    private const val TAG = "FirebaseDBFunctions"
+
     // Listeners
     private var garageStatusListener : GarageStatusListener? = null
 
@@ -20,17 +24,74 @@ object FirebaseDatabaseFunctions {
      */
     fun sendGarageAction(actionType : ActionType) {
         val database = FirebaseDatabase.getInstance()
+        Log.d(TAG, "sendGarageAction - sending action ${actionType.name} ($database)")
         val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
 
         database.reference
             .child(GARAGES)
             .child("home_garage")
+            .child("controller")
             .child(ACTION)
             .setValue(
                 GarageAction(actionType.name,
                     uid,
                     SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(Calendar.getInstance().time))
             )
+    }
+
+    /**
+     * Sends a debug message to firebase for remote
+     * logging. The message is stored under debug/uid
+     * with the identifier being a timestamp in
+     * the format yyyy-MM-dd HH:mm:ss.
+     *
+     * @param message The debug message to store on firebase
+     */
+    fun sendDebugMessage(message: String) {
+        val database = FirebaseDatabase.getInstance()
+        Log.d(TAG, "sendDebugMessage - sending debug message $message ($database)")
+        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+
+        database.reference
+            .child(GARAGES)
+            .child("home_garage")
+            .child("debug")
+            .child(uid)
+            .child(SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(Calendar.getInstance().time))
+            .setValue(DebugMessage(message))
+    }
+
+    /**
+     * Changes the auto_close_options endpoint for the garage to
+     * reflect the new option changes. The Arduino will read in
+     * the new option and update it's 'auto close' functionality
+     * accordingly.
+     *
+     * @param enabled Whether auto close functionality is enabled
+     * @param timeout The time (in milliseconds) to wait before
+     *  automatically shutting the garage door
+     *  @param warningTimeout The time (in milliseconds) to wait
+     *  before automatically shutting the garage door
+     */
+    fun sendAutoCloseOption(enabled: Boolean, timeout: Long, warningEnabled: Boolean, warningTimeout: Long) {
+        val database = FirebaseDatabase.getInstance()
+        Log.d(TAG, "sendAutoCloseOption - updating options to $enabled, $timeout, $warningTimeout")
+        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+
+        database.reference
+            .child(GARAGES)
+            .child("home_garage")
+            .child("controller")
+            .child(AUTO_CLOSE_OPTIONS)
+            .setValue(
+                AutoCloseOptions(enabled,
+                    timeout,
+                    warningTimeout,
+                    warningEnabled,
+                    uid,
+                    SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(Calendar.getInstance().time))
+            )
+
     }
 
     /**
@@ -53,28 +114,81 @@ object FirebaseDatabaseFunctions {
         }
     }
 
+    fun addGarageWidgetListener(eventListener: ValueEventListener?) {
+        val database = FirebaseDatabase.getInstance()
+
+        eventListener?.let { listener ->
+            database.reference
+                .child(GARAGES)
+                .child("home_garage")
+                .child(STATUS)
+                .addValueEventListener(listener)
+        }
+    }
+
+    fun addOptionsListener (eventListener: ValueEventListener?) {
+        val database = FirebaseDatabase.getInstance()
+
+        eventListener?.let { listener ->
+            database.reference
+                .child(GARAGES)
+                .child("home_garage")
+                .child("controller")
+                .child(AUTO_CLOSE_OPTIONS)
+                .addValueEventListener(listener)
+        }
+    }
+
+    fun removeGarageWidgetListener(eventListener: ValueEventListener?) {
+        val database = FirebaseDatabase.getInstance()
+
+        eventListener?.let { listener ->
+            database.reference
+                .child(GARAGES)
+                .child("home_garage")
+                .child(STATUS)
+                .removeEventListener(listener)
+        }
+    }
+
     @Suppress("UNCHECKED_CAST")
     private class GarageStatusListener : ValueEventListener {
         val TAG = "GarageListener"
         override fun onCancelled(p0: DatabaseError) {
             Log.w(TAG, "cancelled")
             garageStatusListener = null
+            sendDebugMessage("GarageStatusListener - cancelled!")
         }
 
         override fun onDataChange(snapshot: DataSnapshot) {
             try {
                 val snapshotValues = snapshot.value as Map<String, Any?>
                 val newStatus = snapshotValues[TYPE] as String
+                AppState.garageData.previousStatus.set(AppState.garageData.status.get())
                 AppState.garageData.status.set(AppState.statusFromString(newStatus))
-            } catch (e : Exception) { Log.e(TAG, "$e") }
+            } catch (e : Exception) {
+                AppState.errorData.garageStatusError.set(e)
+                Log.e(TAG, "$e")
+                sendDebugMessage("GarageStatusListener - An error occurred: $e")
+            }
         }
-
     }
+
+    private data class DebugMessage(val message: String)
 
     data class GarageAction (
         val type : String,
         val uid : String,
-        val timestamp : String
+        val a_timestamp : String
+    )
+
+    data class AutoCloseOptions (
+        var enabled : Boolean = false,
+        var timeout : Long = 0,
+        var warningTimeout : Long = 0,
+        var warningEnabled: Boolean = false,
+        var uid : String = "",
+        var o_timestamp : String = ""
     )
 
     enum class ActionType {OPEN, CLOSE}
@@ -82,7 +196,8 @@ object FirebaseDatabaseFunctions {
     private const val GARAGES = "garages"
     private const val STATUS = "status"
     private const val ACTION = "action"
-    private const val TYPE = "type"
+    private const val AUTO_CLOSE_OPTIONS = "auto_close_options"
+    const val TYPE = "type"
 
     private const val ACTION_OPEN = "OPEN"
     private const val ACTION_CLOSE = "CLOSE"

@@ -19,6 +19,7 @@
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintVertical_bias=".49"
+            android:scaleType="centerCrop"
             />
 
         <ImageView
@@ -29,10 +30,10 @@
             app:layout_constraintEnd_toEndOf="@id/imgSplashIcon"
             app:layout_constraintTop_toTopOf="@id/imgSplashIcon"
             app:layout_constraintBottom_toBottomOf="@id/imgSplashIcon"
-            app:layout_constraintVertical_bias=".65"
+            app:layout_constraintVertical_bias=".95"
             android:elevation="8dp"
             app:srcCompat="@drawable/av_progress"
-            android:tint="@android:color/white"
+            android:tint="@color/colorPrimaryDark"
             android:alpha="0"
             />
 
