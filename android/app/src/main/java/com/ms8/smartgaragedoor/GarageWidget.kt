@@ -10,6 +10,7 @@ import android.util.Log
 import android.widget.RemoteViews
 import androidx.core.content.ContextCompat
 import androidx.databinding.ObservableField
+import com.ms8.smartgaragedoor.MainActivity.Companion.PREFS
 
 
 /**

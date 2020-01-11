@@ -2,8 +2,10 @@ package com.ms8.smartgaragedoor
 
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.graphics.drawable.Drawable
 import android.os.Bundle
+import android.util.Log
 import android.view.Gravity
 import android.view.View
 import android.view.animation.DecelerateInterpolator
@@ -27,9 +29,70 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, CompoundButton.O
 
     private lateinit var binding : ActivityMainBinding
     private lateinit var drawer : Drawer
-    private lateinit var autoCloseOptionsBinding: DrawerAutoCloseOptionsBinding
+    private lateinit var optionsBinding: DrawerAutoCloseOptionsBinding
     private var garageProgressDrawable : AnimatedVectorDrawableCompat? = null
 
+
+    private fun setupOptions(themeStr: String?, sharedPrefs: SharedPreferences = getSharedPreferences(PREFS, Context.MODE_PRIVATE)) {
+        optionsBinding  = DrawerAutoCloseOptionsBinding.inflate(layoutInflater)
+        optionsBinding.swAutoClose.apply {
+            isChecked = sharedPrefs.getBoolean(PREFS_AUTO_CLOSE_ENABLED, false)
+            setOnCheckedChangeListener(this@MainActivity)
+        }
+        optionsBinding.swWarnBeforeClosing.apply {
+            isChecked = sharedPrefs.getBoolean(PREFS_AUTO_CLOSE_WARN_ENABLED, false)
+            setOnCheckedChangeListener(this@MainActivity)
+        }
+        optionsBinding.sbCloseAfter.apply {
+            progress = sharedPrefs.getInt(PREFS_AUTO_CLOSE_AFTER, 0)
+            setOnSeekBarChangeListener(this@MainActivity)
+        }
+        optionsBinding.sbWarningAfter.apply {
+            progress = sharedPrefs.getInt(PREFS_AUTO_CLOSE_WARN_AFTER, 0)
+            setOnSeekBarChangeListener(this@MainActivity)
+        }
+        optionsBinding.swTheme.apply {
+            text = if (themeStr == THEME_DARK) getString(R.string.dark_theme ) else getString(R.string.light_theme)
+            isChecked = themeStr == THEME_DARK
+            setOnCheckedChangeListener(this@MainActivity)
+        }
+
+        val autoCloseEnabled = sharedPrefs.getBoolean(PREFS_AUTO_CLOSE_ENABLED, false)
+        val warningEnabled = sharedPrefs.getBoolean(PREFS_AUTO_CLOSE_WARN_ENABLED, false)
+
+        optionsBinding.sbWarningAfter.isEnabled = autoCloseEnabled && warningEnabled
+        optionsBinding.swWarnBeforeClosing.isEnabled = autoCloseEnabled
+        optionsBinding.sbCloseAfter.isEnabled = autoCloseEnabled
+        optionsBinding.tvCloseAfter.isEnabled = autoCloseEnabled
+        optionsBinding.tvCloseAfterValue.isEnabled = autoCloseEnabled
+        optionsBinding.tvWarningAfter.isEnabled = autoCloseEnabled && warningEnabled
+        optionsBinding.tvWarningAfterValue.isEnabled = autoCloseEnabled && warningEnabled
+
+        optionsBinding.tvWarningAfterValue.text = getTimeFromProgress(optionsBinding.sbWarningAfter.progress)
+        optionsBinding.tvCloseAfterValue.text = getTimeFromProgress(optionsBinding.sbCloseAfter.progress)
+
+        optionsBinding.spaceStatusBar.minimumHeight = resources
+            .getDimensionPixelSize(resources.getIdentifier("status_bar_height", "dimen", "android"))
+
+        optionsBinding.autoCloseOptionsRoot
+            .setBackgroundColor(
+                if (themeStr == THEME_DARK)
+                    ContextCompat.getColor(this, R.color.colorBackgroundDark)
+                else
+                    ContextCompat.getColor(this, R.color.colorBackground)
+            )
+
+        // Set up Options drawer
+        drawer = DrawerBuilder()
+            .withActivity(this)
+            .withDrawerGravity(Gravity.END)
+            .withFullscreen(true)
+            .withCloseOnClick(false)
+            .withTranslucentStatusBar(false)
+            .withCustomView(optionsBinding.autoCloseOptionsRoot)
+            .build()
+        drawer.drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_OPEN)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // Set up theme
@@ -46,64 +109,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, CompoundButton.O
         garageProgressDrawable = AnimatedVectorDrawableCompat.create(this, R.drawable.av_progress)
         garageProgressDrawable?.registerAnimationCallback(garageProgressViewCallback)
 
-        autoCloseOptionsBinding  = DrawerAutoCloseOptionsBinding.inflate(layoutInflater)
-        autoCloseOptionsBinding.swAutoClose.apply {
-            isChecked = sharedPrefs.getBoolean(PREFS_AUTO_CLOSE_ENABLED, false)
-            setOnCheckedChangeListener(this@MainActivity)
-        }
-        autoCloseOptionsBinding.swWarnBeforeClosing.apply {
-            isChecked = sharedPrefs.getBoolean(PREFS_AUTO_CLOSE_WARN_ENABLED, false)
-            setOnCheckedChangeListener(this@MainActivity)
-        }
-        autoCloseOptionsBinding.sbCloseAfter.apply {
-            progress = sharedPrefs.getInt(PREFS_AUTO_CLOSE_AFTER, 0)
-            setOnSeekBarChangeListener(this@MainActivity)
-        }
-        autoCloseOptionsBinding.sbWarningAfter.apply {
-            progress = sharedPrefs.getInt(PREFS_AUTO_CLOSE_WARN_AFTER, 0)
-            setOnSeekBarChangeListener(this@MainActivity)
-        }
-        autoCloseOptionsBinding.swTheme.apply {
-            text = if (themeStr == THEME_DARK) getString(R.string.dark_theme ) else getString(R.string.light_theme)
-            isChecked = themeStr == THEME_DARK
-            setOnCheckedChangeListener(this@MainActivity)
-        }
-
-        val autoCloseEnabled = sharedPrefs.getBoolean(PREFS_AUTO_CLOSE_ENABLED, false)
-        val warningEnabled = sharedPrefs.getBoolean(PREFS_AUTO_CLOSE_WARN_ENABLED, false)
-
-        autoCloseOptionsBinding.sbWarningAfter.isEnabled = autoCloseEnabled && warningEnabled
-        autoCloseOptionsBinding.swWarnBeforeClosing.isEnabled = autoCloseEnabled
-        autoCloseOptionsBinding.sbCloseAfter.isEnabled = autoCloseEnabled
-        autoCloseOptionsBinding.tvCloseAfter.isEnabled = autoCloseEnabled
-        autoCloseOptionsBinding.tvCloseAfterValue.isEnabled = autoCloseEnabled
-        autoCloseOptionsBinding.tvWarningAfter.isEnabled = autoCloseEnabled && warningEnabled
-        autoCloseOptionsBinding.tvWarningAfterValue.isEnabled = autoCloseEnabled && warningEnabled
-
-        autoCloseOptionsBinding.tvWarningAfterValue.text = getTimeFromProgress(autoCloseOptionsBinding.sbWarningAfter.progress)
-        autoCloseOptionsBinding.tvCloseAfterValue.text = getTimeFromProgress(autoCloseOptionsBinding.sbCloseAfter.progress)
-
-        autoCloseOptionsBinding.spaceStatusBar.minimumHeight = resources
-            .getDimensionPixelSize(resources.getIdentifier("status_bar_height", "dimen", "android"))
-
-        autoCloseOptionsBinding.autoCloseOptionsRoot
-            .setBackgroundColor(
-                if (themeStr == THEME_DARK)
-                    ContextCompat.getColor(this, R.color.colorBackgroundDark)
-                else
-                    ContextCompat.getColor(this, R.color.colorBackground)
-            )
-
-        // Set up Options drawer
-        drawer = DrawerBuilder()
-            .withActivity(this)
-            .withDrawerGravity(Gravity.END)
-            .withFullscreen(true)
-            .withCloseOnClick(false)
-            .withTranslucentStatusBar(false)
-            .withCustomView(autoCloseOptionsBinding.autoCloseOptionsRoot)
-            .build()
-        drawer.drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_OPEN)
+        setupOptions(themeStr)
     }
 
     private fun getTimeFromProgress(progress: Int): String {
@@ -123,6 +129,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, CompoundButton.O
         super.onResume()
         AppState.garageData.status.addOnPropertyChangedCallback(garageStatusListener)
         AppState.errorData.garageStatusError.addOnPropertyChangedCallback(garageStatusErrorListener)
+        AppState.garageData.autoCloseOptions.addOnPropertyChangedCallback(optionsChangedListener)
         updateStatusUI()
 
         // Start background service
@@ -135,6 +142,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, CompoundButton.O
         super.onPause()
         AppState.garageData.status.removeOnPropertyChangedCallback(garageStatusListener)
         AppState.errorData.garageStatusError.removeOnPropertyChangedCallback(garageStatusErrorListener)
+        AppState.garageData.autoCloseOptions.removeOnPropertyChangedCallback(optionsChangedListener)
     }
 
     override fun onClick(view: View) {
@@ -155,6 +163,8 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, CompoundButton.O
 
     private fun toggleWarnBeforeClosing(isChecked: Boolean) {
         val prefs = getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        val sendFirebaseUpdate = prefs.getBoolean(PREFS_AUTO_CLOSE_WARN_ENABLED, false) == AppState.garageData.autoCloseOptions.get()?.warningEnabled
+
         prefs.edit().putBoolean(PREFS_AUTO_CLOSE_WARN_ENABLED, isChecked).apply()
 
         val enabled = prefs.getBoolean(PREFS_AUTO_CLOSE_ENABLED, false)
@@ -162,15 +172,18 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, CompoundButton.O
         val timeout = getTimeout(prefs.getInt(PREFS_AUTO_CLOSE_AFTER, 0))
 
         // Enable/Disable warning views
-        autoCloseOptionsBinding.sbWarningAfter.isEnabled = isChecked && enabled
-        autoCloseOptionsBinding.tvWarningAfter.isEnabled = isChecked && enabled
-        autoCloseOptionsBinding.tvWarningAfterValue.isEnabled = isChecked && enabled
+        optionsBinding.sbWarningAfter.isEnabled = isChecked && enabled
+        optionsBinding.tvWarningAfter.isEnabled = isChecked && enabled
+        optionsBinding.tvWarningAfterValue.isEnabled = isChecked && enabled
 
-        FirebaseDatabaseFunctions.sendAutoCloseOption(enabled, timeout, if (isChecked) warningTimeout else 0)
+        if (sendFirebaseUpdate)
+            FirebaseDatabaseFunctions.sendAutoCloseOption(enabled, timeout, isChecked, warningTimeout )
     }
 
     private fun toggleAutoClose(isChecked: Boolean) {
         val prefs = getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        val sendFirebaseUpdate = prefs.getBoolean(PREFS_AUTO_CLOSE_ENABLED, false) == AppState.garageData.autoCloseOptions.get()?.enabled
+
         prefs.edit().putBoolean(PREFS_AUTO_CLOSE_ENABLED, isChecked).apply()
 
         val warningTimeout = getWarningTimeout(prefs.getInt(PREFS_AUTO_CLOSE_WARN_AFTER, 0))
@@ -179,16 +192,17 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, CompoundButton.O
 
         // Enable/Disable auto close views
 
-        autoCloseOptionsBinding.sbCloseAfter.isEnabled = isChecked
-        autoCloseOptionsBinding.tvCloseAfter.isEnabled = isChecked
-        autoCloseOptionsBinding.tvCloseAfterValue.isEnabled = isChecked
-        autoCloseOptionsBinding.tvWarningAfterValue.isEnabled = isChecked && warningEnabled
-        autoCloseOptionsBinding.tvWarningAfter.isEnabled = isChecked && warningEnabled
-        autoCloseOptionsBinding.sbWarningAfter.isEnabled = isChecked && warningEnabled
-        autoCloseOptionsBinding.swWarnBeforeClosing.isEnabled = isChecked
+        optionsBinding.sbCloseAfter.isEnabled = isChecked
+        optionsBinding.tvCloseAfter.isEnabled = isChecked
+        optionsBinding.tvCloseAfterValue.isEnabled = isChecked
+        optionsBinding.tvWarningAfterValue.isEnabled = isChecked && warningEnabled
+        optionsBinding.tvWarningAfter.isEnabled = isChecked && warningEnabled
+        optionsBinding.sbWarningAfter.isEnabled = isChecked && warningEnabled
+        optionsBinding.swWarnBeforeClosing.isEnabled = isChecked
 
         // Send firebase update
-        FirebaseDatabaseFunctions.sendAutoCloseOption(isChecked, timeout, if (warningEnabled) warningTimeout else 0)
+        if (sendFirebaseUpdate)
+            FirebaseDatabaseFunctions.sendAutoCloseOption(isChecked, timeout, warningEnabled, warningTimeout)
     }
 
     private fun toggleTheme(isChecked: Boolean) {
@@ -297,6 +311,32 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, CompoundButton.O
             binding.progGarageStatus.post { garageProgressDrawable?.start() }
         }
     }
+    private val optionsChangedListener = object : Observable.OnPropertyChangedCallback() {
+        override fun onPropertyChanged(sender: Observable?, propertyId: Int) {
+            val sharedPrefs = getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            val options = AppState.garageData.autoCloseOptions.get() ?: return
+
+            if (sharedPrefs.getBoolean(PREFS_AUTO_CLOSE_ENABLED, false) != options.enabled) {
+                Log.d(TAG, "optionsChangedListener - autoCloseEnabled has changed: ${options.enabled}")
+                optionsBinding.swAutoClose.isChecked = options.enabled
+            }
+
+            if (sharedPrefs.getBoolean(PREFS_AUTO_CLOSE_WARN_AFTER, false) != options.warningEnabled) {
+                Log.d(TAG, "optionsChangedListener - warningEnabled has changed: ${options.warningEnabled}")
+                optionsBinding.swWarnBeforeClosing.isChecked = options.warningEnabled
+            }
+
+            if (sharedPrefs.getInt(PREFS_AUTO_CLOSE_WARN_AFTER, 0) != getProgress(options.warningTimeout)) {
+                Log.d(TAG, "optionsChangedListener - warningTimeout has changed: ${options.warningTimeout}")
+                optionsBinding.sbWarningAfter.progress = getProgress(options.warningTimeout)
+            }
+
+            if (sharedPrefs.getInt(PREFS_AUTO_CLOSE_AFTER, 0) != getProgress(options.timeout)) {
+                Log.d(TAG, "optionsChangedListener - timeout has changed: ${options.timeout}")
+                optionsBinding.sbCloseAfter.progress = getProgress((options.timeout))
+            }
+        }
+    }
 
     companion object {
         const val TAG = "MainActivity"
@@ -312,8 +352,8 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, CompoundButton.O
 
     override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
         when (seekBar.id) {
-            R.id.sbCloseAfter -> autoCloseOptionsBinding.tvCloseAfterValue.text = getTimeFromProgress(progress + 1)
-            R.id.sbWarningAfter -> autoCloseOptionsBinding.tvWarningAfterValue.text = getTimeFromProgress(progress)
+            R.id.sbCloseAfter -> optionsBinding.tvCloseAfterValue.text = getTimeFromProgress(progress + 1)
+            R.id.sbWarningAfter -> optionsBinding.tvWarningAfterValue.text = getTimeFromProgress(progress)
         }
     }
 
@@ -327,12 +367,12 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, CompoundButton.O
     }
 
     private fun updateWarningAfter() {
-        val progress = autoCloseOptionsBinding.sbWarningAfter.progress
+        val progress = optionsBinding.sbWarningAfter.progress
         val prefs = getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         prefs.edit().putInt(PREFS_AUTO_CLOSE_WARN_AFTER, progress).apply()
 
         // Update text view
-        autoCloseOptionsBinding.tvWarningAfterValue.text = getTimeFromProgress(progress)
+        optionsBinding.tvWarningAfterValue.text = getTimeFromProgress(progress)
 
         // Get the new timeout (in milliseconds)
         val warningTimeout: Long = getWarningTimeout(progress)
@@ -341,16 +381,16 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, CompoundButton.O
         val timeout = getTimeout(prefs.getInt(PREFS_AUTO_CLOSE_AFTER, 0))
         val warningEnabled = prefs.getBoolean(PREFS_AUTO_CLOSE_WARN_ENABLED, false)
 
-        FirebaseDatabaseFunctions.sendAutoCloseOption(enabled, timeout, if (warningEnabled) warningTimeout else 0)
+        FirebaseDatabaseFunctions.sendAutoCloseOption(enabled, timeout, warningEnabled, warningTimeout)
     }
 
     private fun updateCloseAfter() {
-        val progress = autoCloseOptionsBinding.sbCloseAfter.progress
+        val progress = optionsBinding.sbCloseAfter.progress
         val prefs = getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         prefs.edit().putInt(PREFS_AUTO_CLOSE_AFTER, progress).apply()
 
         // Update text view
-        autoCloseOptionsBinding.tvCloseAfterValue.text = getTimeFromProgress(progress+1)
+        optionsBinding.tvCloseAfterValue.text = getTimeFromProgress(progress+1)
 
         // Get the new timeout (in milliseconds)
         val timeout: Long = getTimeout(progress)
@@ -359,11 +399,12 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, CompoundButton.O
         val warningTimeout = getWarningTimeout(prefs.getInt(PREFS_AUTO_CLOSE_WARN_AFTER, 0))
         val warningEnabled = prefs.getBoolean(PREFS_AUTO_CLOSE_WARN_ENABLED, false)
 
-        FirebaseDatabaseFunctions.sendAutoCloseOption(enabled, timeout, if (warningEnabled) warningTimeout else 0)
+        FirebaseDatabaseFunctions.sendAutoCloseOption(enabled, timeout, warningEnabled, warningTimeout)
     }
 
     private fun getWarningTimeout(progress: Int) : Long  = (15 * progress * 60 * 1000).toLong()
     private fun getTimeout(progress: Int): Long = (15 * (progress + 1) * 60 * 1000).toLong()
 
+    private fun getProgress(timeout: Long): Int = (timeout / (15 * 60 * 1000)).toInt()
 
 }

@@ -2,6 +2,7 @@
   <dictionary name="matth">
     <words>
       <w>arduino</w>
+      <w>firebase</w>
     </words>
   </dictionary>
 </component>

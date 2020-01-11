@@ -1,5 +1,6 @@
 package com.ms8.smartgaragedoor
 
+import android.hardware.usb.UsbEndpoint
 import android.util.Log
 import androidx.databinding.ObservableField
 
@@ -49,7 +50,8 @@ object AppState {
 
     data class GarageData (
         val status : ObservableField<GarageStatus?> = ObservableField(),
-        val previousStatus : ObservableField<GarageStatus?> = ObservableField()
+        val previousStatus : ObservableField<GarageStatus?> = ObservableField(),
+        val autoCloseOptions : ObservableField<FirebaseDatabaseFunctions.AutoCloseOptions> = ObservableField()
     )
 
     data class ErrorData (
