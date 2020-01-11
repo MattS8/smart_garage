@@ -13,6 +13,7 @@ typedef struct GarageAction {
 typedef struct AutoCloseOptions {
 	bool enabled;						// Determines whether to run "auto close" functionality
 	long timeout;						// Time before garage door closes
+	bool warningEnabled;				// Determines whether to warn users before closing door
 	long warningTimeout;				// Time before warning is sent to users
 } AutoCloseOptions;
 

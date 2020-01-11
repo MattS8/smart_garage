@@ -33,6 +33,7 @@ void setup() {
 	// Initialize "auto close" options
 	autoCloseOptions.enabled = false;
 	autoCloseOptions.timeout = 0;
+	autoCloseOptions.warningEnabled = false;
 	autoCloseOptions.warningTimeout = 0;
 
 	// Initialize "auto close" variables
@@ -138,7 +139,7 @@ void loop() {
 	// ---- Check "Auto Close" ----
 	if (autoCloseOptions.enabled)
 	{
-		if (autoClose.warningTime != 0 && millis() >= autoClose.warningTime)
+		if (autoCloseOptions.warningEnabled && autoClose.warningTime != 0 && millis() >= autoClose.warningTime)
 			sendAutoCloseWarning();
 
 		if (autoClose.closeTime != 0 && millis() >= autoClose.closeTime)
@@ -369,6 +370,9 @@ void handleOptionsChange(FirebaseObject event, String basePath)
 	tempOptions.warningTimeout = event.getFloat(basePath + "warningTimeout");
 	if (!event.success())
 		tempOptions.warningTimeout = autoCloseOptions.warningTimeout;
+	tempOptions.warningEnabled = event.getBool(basePath + "warningEnabled");
+	if (!event.success())
+		tempOptions.warningEnabled = autoCloseOptions.warningEnabled;
 
 	autoCloseOptions.enabled = tempOptions.enabled;
 	autoCloseOptions.timeout = tempOptions.timeout;
@@ -379,6 +383,8 @@ void handleOptionsChange(FirebaseObject event, String basePath)
 	Serial.println(autoCloseOptions.enabled);
 	Serial.print("\ttimeout: ");
 	Serial.println(autoCloseOptions.timeout);
+	Serial.print("\twarningEnabled: ");
+	Serial.println(autoCloseOptions.warningEnabled);
 	Serial.print("\twarningTimeout: ");
 	Serial.println(autoCloseOptions.warningTimeout);
 }
