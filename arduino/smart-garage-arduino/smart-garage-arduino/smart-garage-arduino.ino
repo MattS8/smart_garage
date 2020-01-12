@@ -119,11 +119,17 @@ void toggleGarageDoor() {
 	Serial.println("Done!");
 }
 
-// First, check status pins to see if there is a change in state for the garage door.
-//	If there is a change, update the status on Firebase and any local state variables.
-// Then, check to see if we have received a new action from Firebase.
-//	If we have, determine whether or not to send a toggle signal to the garage door
-//	based on the current state.
+// Controller Loop:
+// 1) Check for Firebase failure -> restart listener
+// 2) Check for new status -> Update current status accordingly
+// 3) If Enabled, Check auto close functionality ->
+//		If warning enabled and is time -> Send warning
+//		If auto close enabled and is time -> Auto close door
+// 4) Check firebase listener for event ->
+// 		If this is the first event -> Handle first time event
+//		Else If this is an action event -> Handle new action event
+//		Else If this is an options event -> Hanle new options
+
 void loop() {
 	delay(300);
 
@@ -245,7 +251,10 @@ void sendAutoCloseWarning()
 {
 	autoClose.warningTime = 0;
 
-	// todo - send warning notification
+	String autoCloseWarningStr = "{\"tiemout\":" + autoCloseOptions.warningTime + ",\"timestamp\":" + millis() = "}"
+
+	FirebaseObject warningObject = FirebaseObject(autoCloseWarningStr.c_str());
+	sendToFirebase(PATH_BASE + "notifications/auto_close_warning", warningObject.getJsonVariant("/"));
 
 	debugMessage = "Sending warning message regarding auto close.";
 	sendDebugMessage();
@@ -257,6 +266,10 @@ void autoCloseDoor()
 
 	if (garageStatus != STATUS_CLOSED && garageStatus != STATUS_CLOSING)
 	{
+		// Set action to reflect "auto close" action
+		action.type = CLOSE
+
+		// Close garage door
 		toggleGarageDoor();
 
 		debugMessage = "Sending pulse to CLOSE garage door (auto close).";
@@ -264,34 +277,34 @@ void autoCloseDoor()
 	}
 }
 
-bool hasReceivedFirebaseAction() {
-	if (!Firebase.available())
-		return false;
+// bool hasReceivedFirebaseAction() {
+// 	if (!Firebase.available())
+// 		return false;
 
-	FirebaseObject event = Firebase.readEvent();
-	if (event.getString("type") == "put") 
-	{
-		Serial.print("Received FirebaseObject: ");
-		Serial.print(event.getString("data"));
-		Serial.print(" | ");
-		Serial.println(event.getString("data/type"));
+// 	FirebaseObject event = Firebase.readEvent();
+// 	if (event.getString("type") == "put") 
+// 	{
+// 		Serial.print("Received FirebaseObject: ");
+// 		Serial.print(event.getString("data"));
+// 		Serial.print(" | ");
+// 		Serial.println(event.getString("data/type"));
 
-		action.type = event.getString();
-		if (action.type == "") {
-			//Serial.println("\ttrying data...");
-			action.type = event.getString("data");
-		}
-		if (action.type == "") {
-			//Serial.println("\ttrying data/type...");
-			action.type = event.getString("data/type");
-		}
-		return true;
-	}
-	else
-	{
-		return false;
-	}
-}
+// 		action.type = event.getString();
+// 		if (action.type == "") {
+// 			//Serial.println("\ttrying data...");
+// 			action.type = event.getString("data");
+// 		}
+// 		if (action.type == "") {
+// 			//Serial.println("\ttrying data/type...");
+// 			action.type = event.getString("data/type");
+// 		}
+// 		return true;
+// 	}
+// 	else
+// 	{
+// 		return false;
+// 	}
+// }
 
 void handleFirstTimeListenerEvent(FirebaseObject event)
 {
@@ -306,12 +319,12 @@ void handleFirstTimeListenerEvent(FirebaseObject event)
 
 void handleNewAction(String actionStr)
 {
-	action.type = actionStr;
 
 	Serial.print("Received Action: ");
-	Serial.println(action.type);
-	if (action.type == ACTION_CLOSE)
+	Serial.println(actionStr);
+	if (actionStr == ACTION_CLOSE)
 	{
+		action.type = actionStr;
 		if (garageStatus != STATUS_CLOSED && garageStatus != STATUS_CLOSING)
 		{
 			toggleGarageDoor();
@@ -325,8 +338,9 @@ void handleNewAction(String actionStr)
 			sendDebugMessage();
 		}
 	}
-	else if (action.type == ACTION_OPEN)
+	else if (actionStr == ACTION_OPEN)
 	{
+		action.type = actionStr;
 		if (garageStatus != STATUS_OPEN && garageStatus != STATUS_OPENING)
 		{
 			toggleGarageDoor();
@@ -340,7 +354,7 @@ void handleNewAction(String actionStr)
 			sendDebugMessage();
 		}
 	}
-	else if (action.type == ACTION_STOP_AUTO_CLOSE)
+	else if (actionStr == ACTION_STOP_AUTO_CLOSE)
 	{
 		autoClose.closeTime = 0;
 		autoClose.warningTime = 0;
