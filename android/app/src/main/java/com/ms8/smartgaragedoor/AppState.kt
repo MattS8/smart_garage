@@ -1,7 +1,7 @@
 package com.ms8.smartgaragedoor
 
-import android.hardware.usb.UsbEndpoint
 import android.util.Log
+import androidx.databinding.ObservableBoolean
 import androidx.databinding.ObservableField
 
 object AppState {
@@ -47,11 +47,17 @@ object AppState {
 
     val garageData = GarageData()
     val errorData = ErrorData()
+    val appData = AppData()
 
     data class GarageData (
         val status : ObservableField<GarageStatus?> = ObservableField(),
         val previousStatus : ObservableField<GarageStatus?> = ObservableField(),
-        val autoCloseOptions : ObservableField<FirebaseDatabaseFunctions.AutoCloseOptions> = ObservableField()
+        val autoCloseOptions : ObservableField<FirebaseDatabaseFunctions.AutoCloseOptions> = ObservableField(),
+        val autoCloseWarning: ObservableField<FirebaseDatabaseFunctions.AutoCloseWarning> = ObservableField()
+    )
+
+    data class AppData (
+        var appInForeground: Boolean = false
     )
 
     data class ErrorData (

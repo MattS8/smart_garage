@@ -21,4 +21,8 @@
     <string name="warn_before_closing">Warn Before Closing</string>
     <string name="close_after">Close After:</string>
     <string name="send_warning_after">Send Warning After:</string>
+    <string name="auto_close_warning_title">Garage Door Left Open</string>
+    <string name="auto_close_warning_desc">Your garage door might have been left open. If no action is taken, it will be closed automatically.</string>
+    <string name="cancel_auto_close">Prevent Auto Close</string>
+    <string name="dismiss">Dismiss</string>
 </resources>

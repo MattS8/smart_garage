@@ -31,7 +31,16 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, CompoundButton.O
     private lateinit var drawer : Drawer
     private lateinit var optionsBinding: DrawerAutoCloseOptionsBinding
     private var garageProgressDrawable : AnimatedVectorDrawableCompat? = null
+    private var flashbar: Flashbar? = null
+    private var themeStr: String = ""
 
+
+    private fun getBackgroundColor(): Int {
+        return if (themeStr == THEME_DARK)
+            ContextCompat.getColor(this, R.color.colorBackgroundDark)
+        else
+            ContextCompat.getColor(this, R.color.colorBackground)
+    }
 
     private fun setupOptions(themeStr: String?, sharedPrefs: SharedPreferences = getSharedPreferences(PREFS, Context.MODE_PRIVATE)) {
         optionsBinding  = DrawerAutoCloseOptionsBinding.inflate(layoutInflater)
@@ -75,12 +84,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, CompoundButton.O
             .getDimensionPixelSize(resources.getIdentifier("status_bar_height", "dimen", "android"))
 
         optionsBinding.autoCloseOptionsRoot
-            .setBackgroundColor(
-                if (themeStr == THEME_DARK)
-                    ContextCompat.getColor(this, R.color.colorBackgroundDark)
-                else
-                    ContextCompat.getColor(this, R.color.colorBackground)
-            )
+            .setBackgroundColor(getBackgroundColor())
 
         // Set up Options drawer
         drawer = DrawerBuilder()
@@ -92,12 +96,13 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, CompoundButton.O
             .withCustomView(optionsBinding.autoCloseOptionsRoot)
             .build()
         drawer.drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_OPEN)
+        drawer.closeDrawer()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // Set up theme
         val sharedPrefs = getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-        val themeStr = sharedPrefs.getString(PREFS_THEME, THEME_LIGHT)
+        themeStr = sharedPrefs.getString(PREFS_THEME, THEME_LIGHT) ?: THEME_LIGHT
         setTheme(if (themeStr == THEME_DARK) R.style.AppTheme_Dark else R.style.AppTheme)
 
         super.onCreate(savedInstanceState)
@@ -127,9 +132,12 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, CompoundButton.O
     }
     override fun onResume() {
         super.onResume()
+        AppState.appData.appInForeground = true
+
         AppState.garageData.status.addOnPropertyChangedCallback(garageStatusListener)
         AppState.errorData.garageStatusError.addOnPropertyChangedCallback(garageStatusErrorListener)
         AppState.garageData.autoCloseOptions.addOnPropertyChangedCallback(optionsChangedListener)
+        AppState.garageData.autoCloseWarning.addOnPropertyChangedCallback(autoCloseWarningListener)
         updateStatusUI()
 
         // Start background service
@@ -140,9 +148,12 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, CompoundButton.O
 
     override fun onPause() {
         super.onPause()
+        AppState.appData.appInForeground = false
+
         AppState.garageData.status.removeOnPropertyChangedCallback(garageStatusListener)
         AppState.errorData.garageStatusError.removeOnPropertyChangedCallback(garageStatusErrorListener)
         AppState.garageData.autoCloseOptions.removeOnPropertyChangedCallback(optionsChangedListener)
+        AppState.garageData.autoCloseWarning.removeOnPropertyChangedCallback(autoCloseWarningListener)
     }
 
     override fun onClick(view: View) {
@@ -336,6 +347,59 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, CompoundButton.O
                 optionsBinding.sbCloseAfter.progress = getProgress((options.timeout))
             }
         }
+    }
+
+    private val autoCloseWarningListener = object : Observable.OnPropertyChangedCallback() {
+        override fun onPropertyChanged(sender: Observable?, propertyId: Int) {
+            Log.d(TAG, "AutoCloseWarningListener - triggered!")
+
+            if (AppState.garageData.autoCloseWarning.get()?.timeout ?: 0 == 0.toLong()){
+                Log.w(TAG, "AutoCloseWarningListener - AutoCloseWarningSent was false!")
+                return
+            }
+
+            if (flashbar != null) {
+                Log.w(TAG, "AutoCloseWarningListener - Flashbar is already showing!")
+                return
+            }
+
+            flashbar = Flashbar.Builder(this@MainActivity)
+                .icon(R.drawable.ic_warning_yellow_24dp)
+                .iconColorFilter(R.color.warningYellow)
+                .showIcon()
+                .title(R.string.auto_close_warning_title)
+                .message(R.string.auto_close_warning_desc)
+                .positiveActionText(R.string.cancel_auto_close)
+                .positiveActionTapListener(object : Flashbar.OnActionTapListener {
+                    override fun onActionTapped(bar: Flashbar) {
+                        Log.d(TAG, "Flashbar - Sending auto close from flashbar")
+                        FirebaseDatabaseFunctions.sendGarageAction(FirebaseDatabaseFunctions.ActionType.STOP_AUTO_CLOSE)
+                        bar.dismiss()
+                    }
+                })
+                .negativeActionText(R.string.dismiss)
+                .negativeActionTapListener(object : Flashbar.OnActionTapListener {
+                    override fun onActionTapped(bar: Flashbar) { bar.dismiss() }
+                })
+                .barDismissListener(flashbarDismissListener)
+                .backgroundColor(getBackgroundColor())
+                .titleAppearance(R.style.TextAppearance_MaterialComponents_Headline5)
+                .messageAppearance(R.style.TextAppearance_MaterialComponents_Body2)
+                .positiveActionTextAppearance(R.style.AppTheme_TextAppearance_Flashbar_Warning_Positive)
+                .negativeActionTextAppearance(R.style.TextAppearance_MaterialComponents_Body1)
+                .build()
+            flashbar?.show()
+        }
+    }
+
+    private val flashbarDismissListener = object : Flashbar.OnBarDismissListener {
+        override fun onDismissProgress(bar: Flashbar, progress: Float) {}
+
+        override fun onDismissed(bar: Flashbar, event: Flashbar.DismissEvent) {
+            flashbar = null
+        }
+
+        override fun onDismissing(bar: Flashbar, isSwiped: Boolean) { }
     }
 
     companion object {

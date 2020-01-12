@@ -11,10 +11,15 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
         tools:ignore="GoogleAppIndexingWarning">
+        <receiver
+            android:name=".GarageBroadcastReceiver"
+            android:enabled="true"
+            android:exported="true"></receiver>
+
         <service
             android:name=".GarageWidgetService"
             android:enabled="true"
-            android:exported="true"></service>
+            android:exported="true" />
 
         <receiver android:name=".GarageWidget">
             <intent-filter>

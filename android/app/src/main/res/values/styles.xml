@@ -26,4 +26,8 @@
         <item name="android:textSize">28sp</item>
     </style>
 
+    <style name="AppTheme.TextAppearance.Flashbar.Warning.Positive" parent="TextAppearance.MaterialComponents.Body1">
+        <item name="android:textColor">@color/warningYellow</item>
+    </style>
+
 </resources>

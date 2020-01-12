@@ -6,6 +6,7 @@ import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
+import java.sql.Timestamp
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -29,8 +30,8 @@ object FirebaseDatabaseFunctions {
 
         database.reference
             .child(GARAGES)
-            .child("home_garage")
-            .child("controller")
+            .child(HOME_GARAGE)
+            .child(CONTROLLER)
             .child(ACTION)
             .setValue(
                 GarageAction(actionType.name,
@@ -54,8 +55,8 @@ object FirebaseDatabaseFunctions {
 
         database.reference
             .child(GARAGES)
-            .child("home_garage")
-            .child("debug")
+            .child(HOME_GARAGE)
+            .child(DEBUG)
             .child(uid)
             .child(SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(Calendar.getInstance().time))
             .setValue(DebugMessage(message))
@@ -80,8 +81,8 @@ object FirebaseDatabaseFunctions {
 
         database.reference
             .child(GARAGES)
-            .child("home_garage")
-            .child("controller")
+            .child(HOME_GARAGE)
+            .child(CONTROLLER)
             .child(AUTO_CLOSE_OPTIONS)
             .setValue(
                 AutoCloseOptions(enabled,
@@ -107,7 +108,7 @@ object FirebaseDatabaseFunctions {
             garageStatusListener?.let {
                 database.reference
                     .child(GARAGES)
-                    .child("home_garage")
+                    .child(HOME_GARAGE)
                     .child(STATUS)
                     .addValueEventListener(it)
             }
@@ -120,7 +121,7 @@ object FirebaseDatabaseFunctions {
         eventListener?.let { listener ->
             database.reference
                 .child(GARAGES)
-                .child("home_garage")
+                .child(HOME_GARAGE)
                 .child(STATUS)
                 .addValueEventListener(listener)
         }
@@ -132,9 +133,22 @@ object FirebaseDatabaseFunctions {
         eventListener?.let { listener ->
             database.reference
                 .child(GARAGES)
-                .child("home_garage")
-                .child("controller")
+                .child(HOME_GARAGE)
+                .child(CONTROLLER)
                 .child(AUTO_CLOSE_OPTIONS)
+                .addValueEventListener(listener)
+        }
+    }
+
+    fun addAutoCloseWarningListener(eventListener: ValueEventListener?) {
+        val database = FirebaseDatabase.getInstance()
+
+        eventListener?.let { listener ->
+            database.reference
+                .child(GARAGES)
+                .child(HOME_GARAGE)
+                .child(NOTIFICATIONS)
+                .child("auto_close_warning")
                 .addValueEventListener(listener)
         }
     }
@@ -145,7 +159,7 @@ object FirebaseDatabaseFunctions {
         eventListener?.let { listener ->
             database.reference
                 .child(GARAGES)
-                .child("home_garage")
+                .child(HOME_GARAGE)
                 .child(STATUS)
                 .removeEventListener(listener)
         }
@@ -191,12 +205,21 @@ object FirebaseDatabaseFunctions {
         var o_timestamp : String = ""
     )
 
-    enum class ActionType {OPEN, CLOSE}
+    data class AutoCloseWarning(
+        val timeout: Long,
+        val timestamp: Long
+    )
 
+    enum class ActionType {OPEN, CLOSE, STOP_AUTO_CLOSE}
+
+    private const val DEBUG = "debug"
+    private const val CONTROLLER = "controller"
+    private const val HOME_GARAGE = "home_garage"
     private const val GARAGES = "garages"
     private const val STATUS = "status"
     private const val ACTION = "action"
     private const val AUTO_CLOSE_OPTIONS = "auto_close_options"
+    private const val NOTIFICATIONS = "notifications"
     const val TYPE = "type"
 
     private const val ACTION_OPEN = "OPEN"

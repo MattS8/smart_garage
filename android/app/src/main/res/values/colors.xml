@@ -10,6 +10,8 @@
     <color name="colorOpen">#a20025</color>
     <color name="colorOpening">#a0522d</color>
     <color name="colorPaused">#a20025</color>
+    <color name="warningYellow">#ffeb3b</color>
+
 
     <!-- OVERWRITE THESE COLORS FOR A DARK THEME -->
     <!-- MaterialDrawer DEFAULT DARK colors -->
