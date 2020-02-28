@@ -10,7 +10,6 @@
 
 String garageStatus = STATUS_OPEN;				// Global variable for current state of garage door
 GarageAction action;							// Global variable for received actions		
-bool isFirstTimeListenerEvent = true;						// Initial result from firebase listener should be ignored	
 AutoCloseOptions autoCloseOptions;				// Options related to the "auto close" functionality
 AutoClose autoClose;							// Variables pertaining to the "auto close" functionality
 
@@ -31,8 +30,6 @@ void setup()
 	garageStatus = digitalRead(PIN_STATUS_CLOSE) == LOW ? STATUS_CLOSED : STATUS_OPEN;
 	Serial.print("initial status is ");
 	Serial.println(garageStatus);
-
-	isFirstTimeListenerEvent = true;
 
 	// Initialize "auto close" options
 	autoCloseOptions.enabled = false;
@@ -83,6 +80,21 @@ void connectToFirebase()
 
 	delay(500);
 
+	// Fetch Auto Close Options
+	FirebaseJson jsonObject;
+	if (Firebase.get(firebaseData, PATH_BASE + "controller/auto_close_options"))
+	{
+		jsonObject.setJsonData(firebaseData.jsonString());
+		handleOptionsChange(jsonObject);
+	}
+	else
+	{
+		String debugMessage = "Unable to fetch Initial Auto Close Options: ";
+		debugMessage += firebaseData.errorReason();
+		sendDebugMessage(debugMessage);
+	}
+
+	// Begin Streaming
 	Serial.print("Streaming to: ");
 	Serial.println(String(PATH_BASE + "controller"));
 
@@ -110,6 +122,15 @@ void streamCallback(StreamData data)
 	Serial.println("EVENT TYPE: " + data.eventType());
 #endif // LOCAL_DEBUG
 
+	// Handle null data type (action acknowledgements)
+	if (data.dataType() == "null")
+	{
+#ifdef LOCAL_DEBUG
+		Serial.println("Ignoring acknowledgement...");
+#endif // LOCAL_DEBUG
+		return;
+	}
+
 	// Handle invalid type error
 	if (data.dataType() != "json") 
 	{
@@ -124,42 +145,17 @@ void streamCallback(StreamData data)
 	jsonObject.setJsonData(data.jsonString());
 	FirebaseJsonData jsonData;
 
-	// Handle first time event
-	if (isFirstTimeListenerEvent) 
+	// Handle new action
+	if (jsonObject.get(jsonData, "type"))
 	{
-		sendDebugMessage("Handling first-time Firebase event.");
-
-		// Notify that we've handled first time event
-		isFirstTimeListenerEvent = false;
-
-		if (jsonObject.get(jsonData, "auto_close_options")) {
-			// Handle new options
-			FirebaseJson optionsObject;
-			optionsObject.setJsonData(jsonData.stringValue);
-			handleOptionsChange(optionsObject);
-		}
-		else 
-		{
-			// No Options Data on first time event!
-			sendDebugMessage("Initial event did not include Auto Close Options!");
-			ESP.reset();
-			return;
-		}
+		sendDebugMessage("Handling new action");
+		handleNewAction(jsonData.stringValue);
 	}
-	else 
+	// Handle new Auto Close Options
+	else
 	{
-		// Handle new action
-		if (jsonObject.get(jsonData, "type")) 
-		{
-			sendDebugMessage("Handling new action");
-			handleNewAction(jsonData.stringValue);
-		} 
-		// Handle new Auto Close Options
-		else
-		{
-			sendDebugMessage("Handling Auto Close Options change");
-			handleOptionsChange(jsonObject);
-		}
+		sendDebugMessage("Handling Auto Close Options change");
+		handleOptionsChange(jsonObject);
 	}
 }
 
@@ -375,6 +371,8 @@ void handleNewAction(String actionStr)
 	{
 		sendDebugMessage(ERR_ACTION + " (" + actionStr + ")");
 	}
+
+	Firebase.deleteNode(firebaseSendData, PATH_BASE + "controller/action");
 }
 
 void handleOptionsChange(FirebaseJson& options)
@@ -390,7 +388,7 @@ void handleOptionsChange(FirebaseJson& options)
 	if (options.get(optionData, "warningEnabled"))
 		autoCloseOptions.warningEnabled = optionData.boolValue;
 
-#ifdef LCOAL_DEBUG
+#ifdef LOCAL_DEBUG
 	Serial.println("AutoClose Options:");
 	Serial.print("\tenabled: ");
 	Serial.println(autoCloseOptions.enabled);

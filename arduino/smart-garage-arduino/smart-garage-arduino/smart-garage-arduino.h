@@ -48,10 +48,6 @@ static const String ACTION_STOP_AUTO_CLOSE = "STOP_AUTO_CLOSE";
 static const String PATH_BASE = "/garages/home_garage/";
 static const String PATH_DEBUG = "debug/controller/";
 
-static const String FIREBASE_DATA = "data/";
-
-
-static const String JSON_TYPE = "\"type\": \"";
 
 static const String NONE = "_none_";
 
