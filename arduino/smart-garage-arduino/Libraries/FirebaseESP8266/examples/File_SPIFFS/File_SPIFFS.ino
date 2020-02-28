@@ -6,6 +6,8 @@
  * Github: https://github.com/mobizt
  * 
  * Copyright (c) 2019 mobizt
+ * 
+ * This example is for FirebaseESP8266 Arduino library v 2.7.7 or later
  *
 */
 
@@ -16,8 +18,7 @@
 #include "FirebaseESP8266.h"
 #include <ESP8266WiFi.h>
 
-
-#define FIREBASE_HOST "YOUR_FIREBASE_PROJECT.firebaseio.com" //Do not include https:// in FIREBASE_HOST
+#define FIREBASE_HOST "YOUR_FIREBASE_PROJECT.firebaseio.com" //Without http:// or https:// schemes
 #define FIREBASE_AUTH "YOUR_FIREBASE_DATABASE_SECRET"
 #define WIFI_SSID "YOUR_WIFI_AP"
 #define WIFI_PASSWORD "YOUR_WIFI_PASSWORD"
@@ -51,6 +52,12 @@ void setup()
   Firebase.begin(FIREBASE_HOST, FIREBASE_AUTH);
   Firebase.reconnectWiFi(true);
 
+  //Set the size of WiFi rx/tx buffers in the case where we want to work with large data.
+  firebaseData.setBSSLBufferSize(1024, 1024);
+
+  //Set the size of HTTP response buffers in the case where we want to work with large data.
+  firebaseData.setResponseSize(1024);
+
   if (!SPIFFS.begin())
   {
     Serial.println("SPIFFS initialization failed.");
@@ -72,13 +79,19 @@ void setup()
   Serial.println("------------------------------------");
   Serial.println("Set file data test...");
 
-  //Write demo data to file
+   //Write demo data to file
   file = SPIFFS.open("/file1.txt", "w");
-  for (int i = 0; i < 256; i++)
-    file.write((uint8_t)i);
+  uint8_t v = 0;
+  for (int i = 0; i < 200000; i++)
+  {
+    file.write(v);
+    v++;
+  }
 
   file.close();
-
+  
+  //In case of Root CA was set, set this option to false to disable low memory for secured mode BearSSL to support large file data
+  //Firebase.lowMemBSSL(false);
 
   //Set file (read file from Flash memory and set to database)
   if (Firebase.setFile(firebaseData, StorageType::SPIFFS, path + "/Binary/File/data", "/file1.txt"))
@@ -114,10 +127,12 @@ void setup()
       if (i > 0 && i % 16 == 0)
         Serial.println();
 
-      if (i < 16)
+      v = file.read();
+
+      if (v < 16)
         Serial.print("0");
 
-      Serial.print(file.read(), HEX);
+      Serial.print(v, HEX);
       Serial.print(" ");
       i++;
     }

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Arduino.h>
-#include <FirebaseArduino.h>
+#include "FirebaseESP8266.h"
 #include <ESP8266WiFi.h>
 
 typedef struct GarageAction {
@@ -60,6 +60,8 @@ static const String NONE = "_none_";
 
 // Debug
 String debugMessage;
-void sendDebugMessage();
-FirebaseObject getDebugObject();
+//void sendDebugMessage();
+//FirebaseObject getDebugObject();
+
+void streamCallback(StreamData data);
 

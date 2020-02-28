@@ -1,5 +1,5 @@
 /*
- * HTTP Client wrapper v1.0.0
+ * HTTP Client wrapper v1.0.8
  * 
  * The MIT License (MIT)
  * Copyright (c) 2019 K. Suwatchai (Mobizt)
@@ -34,52 +34,141 @@ FirebaseHTTPClient::FirebaseHTTPClient()
 
 FirebaseHTTPClient::~FirebaseHTTPClient()
 {
-  client.stop();
+  _client->stop();
+  _client.reset();
+  _client.release();
 }
 
-bool FirebaseHTTPClient::http_begin(const std::string host, uint16_t port)
+void FirebaseHTTPClient::setRootCA(const char *rootCA)
+{
+
+#ifndef USING_AXTLS
+  _client->setBufferSizes(_bsslRxSize, _bsslTxSize);
+#endif
+
+  if (rootCA)
+  {
+#ifndef USING_AXTLS
+    _client->setTrustAnchors(new X509List(rootCA));
+#else
+    _client->setCACert_P(rootCA, strlen_P(rootCA));
+#endif
+    _certType = 1;
+  }
+  else
+  {
+#ifndef USING_AXTLS
+    _client->setInsecure();
+#endif
+    _certType = 0;
+  }
+
+  _client->setNoDelay(true);
+}
+
+void FirebaseHTTPClient::setRootCAFile(std::string &rootCAFile, uint8_t storageType, uint8_t sdPin)
+{
+
+#ifndef USING_AXTLS
+  _sdPin = sdPin;
+  _client->setBufferSizes(_bsslRxSize, _bsslTxSize);
+
+  if (_clockReady && rootCAFile.length() > 0)
+  {
+
+    if (storageType == 0)
+    {
+      bool t = SPIFFS.begin();
+      if (t)
+      {
+        fs::File f;
+        if (SPIFFS.exists(rootCAFile.c_str()))
+        {
+          f = SPIFFS.open(rootCAFile.c_str(), "r");
+          size_t len = f.size();
+          uint8_t *der = new uint8_t[len];
+
+          if (f.available())
+            f.read(der, len);
+
+          f.close();
+          _client->setTrustAnchors(new X509List(der, len));
+          delete[] der;
+        }
+      }
+    }
+    else
+    {
+      bool t = SD.begin(_sdPin);
+      if (t)
+      {
+        File f;
+        if (SD.exists(rootCAFile.c_str()))
+        {
+          f = SD.open(rootCAFile.c_str(), FILE_READ);
+          size_t len = f.size();
+          uint8_t *der = new uint8_t[len];
+          if (f.available())
+            f.read(der, len);
+
+          f.close();
+          _client->setTrustAnchors(new X509List(der, len));
+          delete[] der;
+        }
+      }
+    }
+    _certType = 2;
+  }
+#endif
+
+  _client->setNoDelay(true);
+}
+
+bool FirebaseHTTPClient::begin(const std::string host, uint16_t port)
 {
   _host = host;
   _port = port;
   return true;
 }
 
-bool FirebaseHTTPClient::http_connected()
+bool FirebaseHTTPClient::connected()
 {
-  return client.available() > 0 || client.connected();
+  return _client->connected();
 }
 
-bool FirebaseHTTPClient::http_sendHeader(const char *header)
+bool FirebaseHTTPClient::sendHeader(const char *header)
 {
-  if (!http_connected())
+  if (!connected())
     return false;
-  client.print(header);
+  _client->print(header);
   return true;
 }
 
-int FirebaseHTTPClient::http_sendRequest(const char *header, const char *payload)
+int FirebaseHTTPClient::sendRequest(const char *header, const char *payload)
 {
   size_t size = strlen(payload);
-  if (!http_connect())
+  if (!connect())
     return HTTPC_ERROR_CONNECTION_REFUSED;
-  if (!http_sendHeader(header))
+  if (!sendHeader(header))
     return HTTPC_ERROR_SEND_HEADER_FAILED;
   if (size > 0)
-    client.print(payload);
+    _client->print(payload);
+
   return 0;
 }
 
-bool FirebaseHTTPClient::http_connect(void)
+bool FirebaseHTTPClient::connect(void)
 {
-  if (http_connected())
+  if (connected())
   {
-    while (client.available() > 0)
-      client.read();
+    while (_client->available() > 0)
+      _client->read();
     return true;
   }
 
-  if (!client.connect(_host.c_str(), _port))
+  if (!_client->connect(_host.c_str(), _port))
     return false;
-  return http_connected();
+
+  return connected();
 }
 #endif

@@ -8,6 +8,7 @@
  * 
  * Copyright (c) 2019 mobizt
  *
+ * This example is for FirebaseESP8266 Arduino library v 2.7.7 or later
 */
 
 //This example shows the basic usage of Blynk platform and Firebase RTDB.
@@ -16,7 +17,7 @@
 #include "FirebaseESP8266.h"
 #include <ESP8266WiFi.h>
 
-#define FIREBASE_HOST "YOUR_FIREBASE_PROJECT.firebaseio.com"
+#define FIREBASE_HOST "YOUR_FIREBASE_PROJECT.firebaseio.com" //Without http:// or https:// schemes
 #define FIREBASE_AUTH "YOUR_FIREBASE_DATABASE_SECRET"
 #define WIFI_SSID "YOUR_WIFI_AP"
 #define WIFI_PASSWORD "YOUR_WIFI_PASSWORD"
@@ -33,6 +34,8 @@
 //Define FirebaseESP8266 data objects
 FirebaseData firebaseData1;
 FirebaseData firebaseData2;
+
+
 
 String path = "/Blynk_Test/Int";
 
@@ -74,6 +77,18 @@ void setup()
 
   Firebase.begin(FIREBASE_HOST, FIREBASE_AUTH);
   Firebase.reconnectWiFi(true);
+
+  //Set the size of WiFi rx/tx buffers in the case where we want to work with large data.
+  firebaseData1.setBSSLBufferSize(1024, 1024);
+
+  //Set the size of HTTP response buffers in the case where we want to work with large data.
+  firebaseData1.setResponseSize(1024);
+
+  //Set the size of WiFi rx/tx buffers in the case where we want to work with large data.
+  firebaseData2.setBSSLBufferSize(1024, 1024);
+
+  //Set the size of HTTP response buffers in the case where we want to work with large data.
+  firebaseData2.setResponseSize(1024);
 
 
   if (!Firebase.beginStream(firebaseData1, path))
@@ -131,14 +146,6 @@ void loop()
         led.on();
       }
     }
-    else if (firebaseData1.dataType() == "float")
-      Serial.println(firebaseData1.floatData());
-    else if (firebaseData1.dataType() == "boolean")
-      Serial.println(firebaseData1.boolData() == 1 ? "true" : "false");
-    else if (firebaseData1.dataType() == "string")
-      Serial.println(firebaseData1.stringData());
-    else if (firebaseData1.dataType() == "json")
-      Serial.println(firebaseData1.jsonData());
     Serial.println("------------------------------------");
     Serial.println();
   }
@@ -150,6 +157,7 @@ BLYNK_WRITE(V1)
 
   Serial.println("------------------------------------");
   Serial.println("Set integer...");
+  //Also can use Firebase.set instead of Firebase.setInt
   if (Firebase.setInt(firebaseData2, path, pinValue))
   {
     Serial.println("PASSED");
@@ -158,16 +166,6 @@ BLYNK_WRITE(V1)
     Serial.print("VALUE: ");
     if (firebaseData2.dataType() == "int")
       Serial.println(firebaseData2.intData());
-    else if (firebaseData2.dataType() == "float")
-      Serial.println(firebaseData2.floatData(), 5);
-    else if (firebaseData2.dataType() == "double")
-      printf("%.9lf\n", firebaseData2.doubleData());
-    else if (firebaseData2.dataType() == "boolean")
-      Serial.println(firebaseData2.boolData() == 1 ? "true" : "false");
-    else if (firebaseData2.dataType() == "string")
-      Serial.println(firebaseData2.stringData());
-    else if (firebaseData2.dataType() == "json")
-      Serial.println(firebaseData2.jsonData());
     Serial.println("------------------------------------");
     Serial.println();
   }
@@ -179,3 +177,4 @@ BLYNK_WRITE(V1)
     Serial.println();
   }
 }
+

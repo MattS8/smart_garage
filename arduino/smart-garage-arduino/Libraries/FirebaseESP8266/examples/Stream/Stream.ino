@@ -6,15 +6,16 @@
  * Github: https://github.com/mobizt
  * 
  * Copyright (c) 2019 mobizt
+ * 
+ * This example is for FirebaseESP8266 Arduino library v 2.6.0 and later
  *
 */
-
 
 //FirebaseESP8266.h must be included before ESP8266WiFi.h
 #include "FirebaseESP8266.h"
 #include <ESP8266WiFi.h>
 
-#define FIREBASE_HOST "YOUR_FIREBASE_PROJECT.firebaseio.com"
+#define FIREBASE_HOST "YOUR_FIREBASE_PROJECT.firebaseio.com" //Without http:// or https:// schemes
 #define FIREBASE_AUTH "YOUR_FIREBASE_DATABASE_SECRET"
 #define WIFI_SSID "YOUR_WIFI_AP"
 #define WIFI_PASSWORD "YOUR_WIFI_PASSWORD"
@@ -22,11 +23,14 @@
 //Define FirebaseESP8266 data object
 FirebaseData firebaseData;
 
+
 unsigned long sendDataPrevMillis = 0;
 
-String path = "/ESP8266_Test/Stream";
+String path = "/Test/Stream";
 
 uint16_t count = 0;
+
+void printResult(FirebaseData &data);
 
 void setup()
 {
@@ -48,6 +52,12 @@ void setup()
   Firebase.begin(FIREBASE_HOST, FIREBASE_AUTH);
   Firebase.reconnectWiFi(true);
 
+  //Set the size of WiFi rx/tx buffers in the case where we want to work with large data.
+  firebaseData.setBSSLBufferSize(1024, 1024);
+
+  //Set the size of HTTP response buffers in the case where we want to work with large data.
+  firebaseData.setResponseSize(1024);
+
   if (!Firebase.beginStream(firebaseData, path))
   {
     Serial.println("------------------------------------");
@@ -60,10 +70,7 @@ void setup()
 
 void loop()
 {
-  //This example uses the same Firebase Data object to read/store data (get, set, update, push and delete) and stream.
-  //This causes some delay (for start new SSL connection) for swiching between read/store and stream operation.
-  //For no delay, see Different_objects_stream.ino example which uses different Firebase Data object for read/store and stream data.
-
+  
   if (millis() - sendDataPrevMillis > 15000)
   {
     sendDataPrevMillis = millis();
@@ -77,18 +84,7 @@ void loop()
       Serial.println("PATH: " + firebaseData.dataPath());
       Serial.println("TYPE: " + firebaseData.dataType());
       Serial.print("VALUE: ");
-      if (firebaseData.dataType() == "int")
-        Serial.println(firebaseData.intData());
-      else if (firebaseData.dataType() == "float")
-        Serial.println(firebaseData.floatData(), 5);
-      else if (firebaseData.dataType() == "double")
-        printf("%.9lf\n", firebaseData.doubleData());
-      else if (firebaseData.dataType() == "boolean")
-        Serial.println(firebaseData.boolData() == 1 ? "true" : "false");
-      else if (firebaseData.dataType() == "string")
-        Serial.println(firebaseData.stringData());
-      else if (firebaseData.dataType() == "json")
-        Serial.println(firebaseData.jsonData());
+      printResult(firebaseData);
       Serial.println("------------------------------------");
       Serial.println();
     }
@@ -100,22 +96,6 @@ void loop()
       Serial.println();
     }
 
-    //Pause WiFi client from all Firebase calls and use shared SSL WiFi client
-    if (firebaseData.pauseFirebase(true))
-    {
-
-      WiFiClientSecure client = firebaseData.getWiFiClient();
-      //Use the client to make your own http connection...
-    }
-    else
-    {
-      Serial.println("------------------------------------");
-      Serial.println("Can't pause the WiFi client...");
-      Serial.println("------------------------------------");
-      Serial.println();
-    }
-    //Unpause WiFi client from Firebase task
-    firebaseData.pauseFirebase(false);
   }
 
   if (!Firebase.readStream(firebaseData))
@@ -142,17 +122,89 @@ void loop()
     Serial.println("DATA TYPE: " + firebaseData.dataType());
     Serial.println("EVENT TYPE: " + firebaseData.eventType());
     Serial.print("VALUE: ");
-    if (firebaseData.dataType() == "int")
-      Serial.println(firebaseData.intData());
-    else if (firebaseData.dataType() == "float")
-      Serial.println(firebaseData.floatData());
-    else if (firebaseData.dataType() == "boolean")
-      Serial.println(firebaseData.boolData() == 1 ? "true" : "false");
-    else if (firebaseData.dataType() == "string")
-      Serial.println(firebaseData.stringData());
-    else if (firebaseData.dataType() == "json")
-      Serial.println(firebaseData.jsonData());
+    printResult(firebaseData);
     Serial.println("------------------------------------");
     Serial.println();
+  }
+}
+
+void printResult(FirebaseData &data)
+{
+
+  if (data.dataType() == "int")
+    Serial.println(data.intData());
+  else if (data.dataType() == "float")
+    Serial.println(data.floatData(), 5);
+  else if (data.dataType() == "double")
+    printf("%.9lf\n", data.doubleData());
+  else if (data.dataType() == "boolean")
+    Serial.println(data.boolData() == 1 ? "true" : "false");
+  else if (data.dataType() == "string")
+    Serial.println(data.stringData());
+  else if (data.dataType() == "json")
+  {
+    Serial.println();
+    FirebaseJson &json = data.jsonObject();
+    //Print all object data
+    Serial.println("Pretty printed JSON data:");
+    String jsonStr;
+    json.toString(jsonStr, true);
+    Serial.println(jsonStr);
+    Serial.println();
+    Serial.println("Iterate JSON data:");
+    Serial.println();
+    size_t len = json.iteratorBegin();
+    String key, value = "";
+    int type = 0;
+    for (size_t i = 0; i < len; i++)
+    {
+      json.iteratorGet(i, type, key, value);
+      Serial.print(i);
+      Serial.print(", ");
+      Serial.print("Type: ");
+      Serial.print(type == JSON_OBJECT ? "object" : "array");
+      if (type == JSON_OBJECT)
+      {
+        Serial.print(", Key: ");
+        Serial.print(key);
+      }
+      Serial.print(", Value: ");
+      Serial.println(value);
+    }
+    json.iteratorEnd();
+  }
+  else if (data.dataType() == "array")
+  {
+    Serial.println();
+    //get array data from FirebaseData using FirebaseJsonArray object
+    FirebaseJsonArray &arr = data.jsonArray();
+    //Print all array values
+    Serial.println("Pretty printed Array:");
+    String arrStr;
+    arr.toString(arrStr, true);
+    Serial.println(arrStr);
+    Serial.println();
+    Serial.println("Iterate array values:");
+    Serial.println();
+    for (size_t i = 0; i < arr.size(); i++)
+    {
+      Serial.print(i);
+      Serial.print(", Value: ");
+
+      FirebaseJsonData &jsonData = data.jsonData();
+      //Get the result data from FirebaseJsonArray object
+      arr.get(jsonData, i);
+      if (jsonData.typeNum == JSON_BOOL)
+        Serial.println(jsonData.boolValue ? "true" : "false");
+      else if (jsonData.typeNum == JSON_INT)
+        Serial.println(jsonData.intValue);
+      else if (jsonData.typeNum == JSON_DOUBLE)
+        printf("%.9lf\n", jsonData.doubleValue);
+      else if (jsonData.typeNum == JSON_STRING ||
+               jsonData.typeNum == JSON_NULL ||
+               jsonData.typeNum == JSON_OBJECT ||
+               jsonData.typeNum == JSON_ARRAY)
+        Serial.println(jsonData.stringValue);
+    }
   }
 }
