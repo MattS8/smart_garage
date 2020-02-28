@@ -13,6 +13,8 @@ GarageAction action;							// Global variable for received actions
 AutoCloseOptions autoCloseOptions;				// Options related to the "auto close" functionality
 AutoClose autoClose;							// Variables pertaining to the "auto close" functionality
 
+bool isInitialAutoCloseOptions = true;			// Used to determine whether to update defaults node
+
 FirebaseData firebaseData;						// FirebaseESP8266 data object
 FirebaseData firebaseSendData;					// FirebaseESP8266 data object used to send updates
 
@@ -82,16 +84,22 @@ void connectToFirebase()
 
 	// Fetch Auto Close Options
 	FirebaseJson jsonObject;
-	if (Firebase.get(firebaseData, PATH_BASE + "controller/auto_close_options"))
+	if (Firebase.get(firebaseData, PATH_BASE + PATH_DEFAULTS + PATH_AUTO_CLOSE_OPTIONS))
 	{
+#ifdef LOCAL_DEBUG
+		Serial.println("Fetching Initial Auto Close Options");
+#endif // LOCAL_DEBUG
+
 		jsonObject.setJsonData(firebaseData.jsonString());
 		handleOptionsChange(jsonObject);
+		isInitialAutoCloseOptions = false;
 	}
 	else
 	{
 		String debugMessage = "Unable to fetch Initial Auto Close Options: ";
 		debugMessage += firebaseData.errorReason();
 		sendDebugMessage(debugMessage);
+		isInitialAutoCloseOptions = false;
 	}
 
 	// Begin Streaming
@@ -114,6 +122,7 @@ void connectToFirebase()
 //	Else If this is an options event -> Hanle new options
 void streamCallback(StreamData data)
 {
+	String eventPath = data.dataPath();
 #ifdef LOCAL_DEBUG
 	Serial.println("Stream Data1 available...");
 	Serial.println("STREAM PATH: " + data.streamPath());
@@ -131,10 +140,11 @@ void streamCallback(StreamData data)
 		return;
 	}
 
+	String debugMessage;
 	// Handle invalid type error
 	if (data.dataType() != "json") 
 	{
-		String debugMessage = "Recieved data that was not of type JSON. (type = ";
+		debugMessage = "Recieved data that was not of type JSON. (type = ";
 		debugMessage += data.dataType();
 		debugMessage += ")";
 		sendDebugMessage(debugMessage);
@@ -146,16 +156,30 @@ void streamCallback(StreamData data)
 	FirebaseJsonData jsonData;
 
 	// Handle new action
-	if (jsonObject.get(jsonData, "type"))
+	if (jsonObject.get(jsonData, "a_timestamp"))
 	{
 		sendDebugMessage("Handling new action");
 		handleNewAction(jsonData.stringValue);
 	}
 	// Handle new Auto Close Options
-	else
+	else if (jsonObject.get(jsonData, "o_timestamp"))
 	{
 		sendDebugMessage("Handling Auto Close Options change");
 		handleOptionsChange(jsonObject);
+	}
+	// Ignore defaults responses
+	else if (eventPath.indexOf("defaults") > 0)
+	{
+#ifdef LOCAL_DEBUG
+		Serial.println("Igoring defaults response...");
+#endif // LOCAL_DEBUG
+	}
+	// Error: Unknown response
+	else 
+	{
+		debugMessage = "Recieved unknown response: ";
+		debugMessage += data.jsonString();
+		sendDebugMessage(debugMessage);
 	}
 }
 
@@ -387,6 +411,18 @@ void handleOptionsChange(FirebaseJson& options)
 		autoCloseOptions.warningTimeout = optionData.doubleValue;
 	if (options.get(optionData, "warningEnabled"))
 		autoCloseOptions.warningEnabled = optionData.boolValue;
+
+	if (!isInitialAutoCloseOptions) {
+		Firebase.deleteNode(firebaseSendData, PATH_BASE + "controller/auto_close_options");
+
+		FirebaseJson defaultsObject;
+		defaultsObject.add("enabled", autoCloseOptions.enabled);
+		defaultsObject.add("timeout", (double) autoCloseOptions.timeout);
+		defaultsObject.add("warningEnabled", autoCloseOptions.warningEnabled);
+		defaultsObject.add("warningTimeout", (double) autoCloseOptions.warningTimeout);
+
+		sendToFirebase(PATH_BASE + PATH_DEFAULTS + PATH_AUTO_CLOSE_OPTIONS, defaultsObject);
+	}
 
 #ifdef LOCAL_DEBUG
 	Serial.println("AutoClose Options:");

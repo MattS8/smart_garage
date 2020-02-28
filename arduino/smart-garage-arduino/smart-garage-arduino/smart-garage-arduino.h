@@ -47,6 +47,8 @@ static const String ACTION_STOP_AUTO_CLOSE = "STOP_AUTO_CLOSE";
 
 static const String PATH_BASE = "/garages/home_garage/";
 static const String PATH_DEBUG = "debug/controller/";
+static const String PATH_DEFAULTS = "controller/defaults/";
+static const String PATH_AUTO_CLOSE_OPTIONS = "auto_close_options";
 
 
 static const String NONE = "_none_";
