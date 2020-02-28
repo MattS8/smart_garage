@@ -80,6 +80,8 @@ void connectToFirebase()
 	Firebase.reconnectWiFi(true);
 	Firebase.setMaxRetry(firebaseData, 4);
 
+	sendDebugMessage("Controller connected to Firebase.");
+
 	delay(500);
 
 	// Fetch Auto Close Options
@@ -158,6 +160,7 @@ void streamCallback(StreamData data)
 	// Handle new action
 	if (jsonObject.get(jsonData, "a_timestamp"))
 	{
+		jsonObject.get(jsonData, "type");
 		sendDebugMessage("Handling new action");
 		handleNewAction(jsonData.stringValue);
 	}
@@ -355,6 +358,9 @@ void handleNewAction(String actionStr)
 	Serial.print("Received Action: ");
 	Serial.println(actionStr);
 #endif // LOCAL_DEBUG
+	Serial.print("Received Action: ");
+	Serial.println(actionStr);
+
 
 	if (actionStr == ACTION_CLOSE)
 	{
@@ -393,7 +399,12 @@ void handleNewAction(String actionStr)
 	}
 	else
 	{
-		sendDebugMessage(ERR_ACTION + " (" + actionStr + ")");
+		String debugMessage = ERR_ACTION;
+		debugMessage += "(";
+		debugMessage += actionStr;
+		debugMessage += ")";
+		Serial.println(debugMessage);
+		sendDebugMessage(debugMessage);
 	}
 
 	Firebase.deleteNode(firebaseSendData, PATH_BASE + "controller/action");

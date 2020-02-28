@@ -37,7 +37,7 @@ static const String STATUS_CLOSED = "CLOSED";
 static const String STATUS_OPENING = "OPENING";
 static const String STATUS_CLOSING = "CLOSING";
 
-static const String ERR_ACTION = "Received action was neither \"OPEN\" nor \"CLOSE\".";
+static const String ERR_ACTION = "Received action was neither OPEN nor CLOSE.";
 
 /* -------------------- Firebase Constants -------------------- */
 static const String ACTION_NONE = "NONE";
