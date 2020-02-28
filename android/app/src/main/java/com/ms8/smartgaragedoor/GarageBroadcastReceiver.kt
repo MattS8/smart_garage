@@ -1,24 +1,36 @@
 package com.ms8.smartgaragedoor
 
+import android.app.NotificationManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.os.AsyncTask
+import android.util.Log
+import com.ms8.smartgaragedoor.FirebaseMessageService.Companion.notificationId
+import java.lang.ref.WeakReference
 
 class GarageBroadcastReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
+        Log.d(TAG, "onReceive")
         val pendingResult = goAsync()
-        val asyncTask = Task(pendingResult, intent)
+        val asyncTask = Task(pendingResult, intent, WeakReference(context))
         asyncTask.execute()
     }
 
-    private class Task (private val pendingResult: PendingResult, private val intent: Intent)
+    private class Task (private val pendingResult: PendingResult, private val intent: Intent, private val contextRef: WeakReference<Context>)
         : AsyncTask<String, Int, String>() {
         override fun doInBackground(vararg p0: String?): String {
+            Log.d(TAG, "Handling Intent with action: ${intent.action}")
             when (intent.action) {
                 ACTION_CANCEL_AUTO_CLOSE -> FirebaseDatabaseFunctions
                     .sendGarageAction(FirebaseDatabaseFunctions.ActionType.STOP_AUTO_CLOSE)
+                    .also { (contextRef.get()?.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
+                        .cancel(notificationId) }
+                ACTION_CLOSE_DOOR -> FirebaseDatabaseFunctions
+                    .sendGarageAction(FirebaseDatabaseFunctions.ActionType.CLOSE)
+                ACTION_OPEN_DOOR -> FirebaseDatabaseFunctions
+                    .sendGarageAction(FirebaseDatabaseFunctions.ActionType.OPEN)
             }
 
             return toString()
@@ -31,8 +43,10 @@ class GarageBroadcastReceiver : BroadcastReceiver() {
     }
 
     companion object {
-        const val EXTRA_SMART_GARAGE_INTENTS = "com.ms8.smartgaragedoor.intenTypes"
-        const val CANCEL_AUTO_CLOSE = "GARAGE_CANCEL_AUTO_CLOSE"
-        const val ACTION_CANCEL_AUTO_CLOSE = "coms.ms8.smartgaragedoor.actions.cancel_auto_close"
+        const val ACTION_CANCEL_AUTO_CLOSE = "com.ms8.smartgaragedoor.actions.cancel_auto_close"
+        const val ACTION_CLOSE_DOOR = "com.ms8.smartgaragedoor.actions.close_garage"
+        const val ACTION_OPEN_DOOR = "com.ms8.smartgaragedoor.actions.open_garage"
+
+        const val TAG = "GarageBroadcastReceiver"
     }
 }

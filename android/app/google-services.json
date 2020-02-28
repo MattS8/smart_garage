@@ -15,6 +15,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "419092477295-kb1umk14gms28he12l7kgt3taghlbrm0.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.ms8.smartgaragedoor",
+            "certificate_hash": "65bd7871c8497cd4aa587b8d3ad1ac5a6f414e6d"
+          }
+        },
+        {
           "client_id": "419092477295-9ipmlgufe8sj74u0p7d0b9si42d8l9us.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
@@ -36,7 +44,7 @@
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "419092477295-d50g3o5c4kk4pu7bpffmisup5i81mj17.apps.googleusercontent.com",
+              "client_id": "419092477295-51teg9721tpl6l0dujhnhhlnbldg0uuj.apps.googleusercontent.com",
               "client_type": 3
             }
           ]

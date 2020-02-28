@@ -53,7 +53,7 @@ object AppState {
         val status : ObservableField<GarageStatus?> = ObservableField(),
         val previousStatus : ObservableField<GarageStatus?> = ObservableField(),
         val autoCloseOptions : ObservableField<FirebaseDatabaseFunctions.AutoCloseOptions> = ObservableField(),
-        val autoCloseWarning: ObservableField<FirebaseDatabaseFunctions.AutoCloseWarning> = ObservableField()
+        val autoCloseWarning: ObservableField<FirebaseDatabaseFunctions.AutoCloseWarning?> = ObservableField()
     )
 
     data class AppData (

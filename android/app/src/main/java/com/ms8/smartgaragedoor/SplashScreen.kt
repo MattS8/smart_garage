@@ -22,6 +22,7 @@ import com.google.android.material.snackbar.Snackbar
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
+import com.ms8.smartgaragedoor.FirebaseMessageService.Companion.NOTIFICATION_TYPE
 import com.ms8.smartgaragedoor.databinding.ActivitySplashBinding
 
 
@@ -46,6 +47,13 @@ class SplashScreen : AppCompatActivity(), View.OnClickListener {
             splashIconRaised = state.getBoolean(STATE_ICON_RAISED, splashIconRaised)
         }
 
+        var DEBUG_keySetsString = ""
+        intent.extras?.keySet()?.forEach { key ->
+            DEBUG_keySetsString += "$key, "
+        }
+        Log.d(TAG, "IntentExtras: $DEBUG_keySetsString")
+        Log.d(TAG, "type: ${intent.extras?.get(NOTIFICATION_TYPE)}")
+
         auth = FirebaseAuth.getInstance()
 
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
@@ -59,7 +67,7 @@ class SplashScreen : AppCompatActivity(), View.OnClickListener {
         progressView?.registerAnimationCallback(garageProgressViewCallback)
 
         // Create notification channel
-        GarageWidgetService.createNotificationChannel(this)
+        //GarageWidgetService.createNotificationChannel(this)
     }
 
     override fun onStart() {
@@ -75,7 +83,7 @@ class SplashScreen : AppCompatActivity(), View.OnClickListener {
             if (AppState.garageData.status.get() != null)
                 nextActivity()
             else
-                fetchGarageStatus()
+                fetchBackendData()
         }
     }
 
@@ -126,7 +134,7 @@ class SplashScreen : AppCompatActivity(), View.OnClickListener {
 
                     updateUI(auth.currentUser)
 
-                    fetchGarageStatus()
+                    fetchBackendData()
                 } else {
                     // If sign in fails, display a message to the user.
                     Log.w(TAG, "signInWithCredential:failure", task.exception)
@@ -184,11 +192,12 @@ class SplashScreen : AppCompatActivity(), View.OnClickListener {
         }
     }
 
-    private fun fetchGarageStatus() {
+    private fun fetchBackendData() {
         if (binding.progressBar.alpha != 1f)
             startProgressView()
 
         FirebaseDatabaseFunctions.listenForGarageStatus()
+        FirebaseDatabaseFunctions.listenForOptionChanges()
         AppState.garageData.status.addOnPropertyChangedCallback(statusListener)
     }
 
@@ -213,7 +222,12 @@ class SplashScreen : AppCompatActivity(), View.OnClickListener {
     }
 
     private fun nextActivity() {
-       startActivity(Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP).putExtra("EXIT", true))
+        val nextActivityIntent = Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            .putExtra("EXIT", true)
+        intent.extras?.getString(NOTIFICATION_TYPE)?.let {
+            nextActivityIntent.putExtra(NOTIFICATION_TYPE, it)
+        }
+       startActivity(nextActivityIntent)
     }
 
     companion object {
