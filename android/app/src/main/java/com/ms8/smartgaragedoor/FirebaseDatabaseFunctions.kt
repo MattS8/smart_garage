@@ -122,6 +122,7 @@ object FirebaseDatabaseFunctions {
                     .child(GARAGES)
                     .child(HOME_GARAGE)
                     .child(CONTROLLER)
+                    .child("defaults")
                     .child(AUTO_CLOSE_OPTIONS)
                     .addValueEventListener(it)
             }
@@ -180,13 +181,20 @@ object FirebaseDatabaseFunctions {
             try {
                 val snapshotValues = snapshot.value as Map<String, Any?>
 
-                val newOptions = AutoCloseOptions(
-                    snapshotValues["enabled"] as Boolean,
-                    snapshotValues["timeout"] as Long,
-                    snapshotValues["warningTimeout"] as Long,
-                    snapshotValues["warningEnabled"] as Boolean,
-                    snapshotValues["uid"] as String,
-                    snapshotValues["o_timestamp"] as String)
+                Log.d("TEST", "onDataChanged")
+                val newOptions = AutoCloseOptions()
+                if (snapshotValues.containsKey("enabled"))
+                    newOptions.enabled = snapshotValues["enabled"] as Boolean
+                if (snapshotValues.containsKey("timeout"))
+                    newOptions.timeout = (snapshotValues["timeout"] as Number).toLong()
+                if (snapshotValues.containsKey("warningTimeout"))
+                    newOptions.warningTimeout = (snapshotValues["warningTimeout"] as Number).toLong()
+                if (snapshotValues.containsKey("warningEnabled"))
+                    newOptions.warningEnabled = snapshotValues["warningEnabled"] as Boolean
+                if (snapshotValues.containsKey("uid"))
+                    newOptions.uid = snapshotValues["uid"] as String
+                if (snapshotValues.containsKey("o_timestamp"))
+                    newOptions.o_timestamp = snapshotValues["o_timestamp"] as String
 
                 AppState.garageData.autoCloseOptions.set(newOptions)
             } catch (e: Exception) {

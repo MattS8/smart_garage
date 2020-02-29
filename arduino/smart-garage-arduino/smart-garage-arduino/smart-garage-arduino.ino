@@ -8,13 +8,15 @@
 #include "smart-garage-arduino.h"
 //#define LOCAL_DEBUG true						// Uncomment to restrict debug statements to local Serial Port
 
-String garageStatus = STATUS_OPEN;				// Global variable for current state of garage door
+String garageStatus = STATUS_CLOSED;			// Global variable for current state of garage door
 GarageAction action;							// Global variable for received actions		
 AutoCloseOptions autoCloseOptions;				// Options related to the "auto close" functionality
 AutoClose autoClose;							// Variables pertaining to the "auto close" functionality
 
 bool isInitialAutoCloseOptions = true;			// Used to determine whether to update defaults node
 int restartCount = 0;							// Used as a UID for controller debug statements
+
+int timeoutCounter = 0;							// Used to try and fix stupid bug with callback missing data during timeout reconnection
 
 FirebaseData firebaseData;						// FirebaseESP8266 data object
 FirebaseData firebaseSendData;					// FirebaseESP8266 data object used to send updates
@@ -80,6 +82,7 @@ void connectToFirebase()
 	Firebase.begin(FIREBASE_HOST, FIREBASE_AUTH);
 	Firebase.reconnectWiFi(true);
 	Firebase.setMaxRetry(firebaseData, 4);
+	firebaseData.setResponseSize(1024);
 
 	// Fetch Restart Count
 	FirebaseJson jsonObject;
@@ -130,12 +133,23 @@ void connectToFirebase()
 	Serial.print("Streaming to: ");
 	Serial.println(String(PATH_BASE + "controller"));
 
-	Firebase.setStreamCallback(firebaseData, streamCallback);
+	Firebase.setStreamCallback(firebaseData, streamCallback, streamTimeoutCallback);
 
 	if (!Firebase.beginStream(firebaseData, PATH_BASE + "controller"))
 	{
 		Serial.println(firebaseData.errorReason());
 		ESP.reset();
+	}
+}
+
+void streamTimeoutCallback(bool timeout)
+{
+	if (timeout) {
+		//Stream timeout occurred
+		Serial.println("Stream timeout, resume streaming...");
+		FirebaseJson timeoutObj;
+		timeoutObj.add("counter", ++timeoutCounter);
+		sendToFirebase(PATH_BASE + "controller/timeout_counter", timeoutObj);
 	}
 }
 
@@ -154,6 +168,11 @@ void streamCallback(StreamData data)
 	Serial.println("DATA TYPE: " + data.dataType());
 	Serial.println("EVENT TYPE: " + data.eventType());
 #endif // LOCAL_DEBUG
+	Serial.println("Stream Data1 available...");
+	Serial.println("STREAM PATH: " + data.streamPath());
+	Serial.println("EVENT PATH: " + data.dataPath());
+	Serial.println("DATA TYPE: " + data.dataType());
+	Serial.println("EVENT TYPE: " + data.eventType());
 
 	// Handle null data type (action acknowledgements)
 	if (data.dataType() == "null")
@@ -193,8 +212,9 @@ void streamCallback(StreamData data)
 		handleOptionsChange(jsonObject);
 	}
 	// Ignore defaults responses
-	else if (eventPath.indexOf("defaults") > 0)
+	else if (jsonObject.get(jsonData, "timeout_counter") || jsonObject.get(jsonData, "defaults") || eventPath.indexOf("defaults") > 0)
 	{
+		Serial.println("Igoring defaults response...");
 #ifdef LOCAL_DEBUG
 		Serial.println("Igoring defaults response...");
 #endif // LOCAL_DEBUG
@@ -202,9 +222,7 @@ void streamCallback(StreamData data)
 	// Error: Unknown response
 	else 
 	{
-		debugMessage = "Recieved unknown response: ";
-		debugMessage += data.jsonString();
-		sendDebugMessage(debugMessage);
+		sendDebugMessage("Recieved unknown JSON response...");
 	}
 }
 
@@ -246,7 +264,7 @@ void toggleGarageDoor()
 
 void loop() 
 {
-	delay(100);
+	//delay(100);
 
 	// ---- Handle Firebase Crash ----
 	if (!Firebase.readStream(firebaseData))
