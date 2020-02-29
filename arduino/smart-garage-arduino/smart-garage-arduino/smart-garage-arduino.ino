@@ -14,6 +14,7 @@ AutoCloseOptions autoCloseOptions;				// Options related to the "auto close" fun
 AutoClose autoClose;							// Variables pertaining to the "auto close" functionality
 
 bool isInitialAutoCloseOptions = true;			// Used to determine whether to update defaults node
+int restartCount = 0;							// Used as a UID for controller debug statements
 
 FirebaseData firebaseData;						// FirebaseESP8266 data object
 FirebaseData firebaseSendData;					// FirebaseESP8266 data object used to send updates
@@ -80,12 +81,33 @@ void connectToFirebase()
 	Firebase.reconnectWiFi(true);
 	Firebase.setMaxRetry(firebaseData, 4);
 
+	// Fetch Restart Count
+	FirebaseJson jsonObject;
+	if (Firebase.get(firebaseData, PATH_BASE + PATH_DEBUG + "restart_count"))
+	{
+#ifdef LOCAL_DEBUG
+		Serial.print("Current restartCount: ");
+		Serial.println(firebase.intData());
+#endif // LOCAL_DEBUG
+		Serial.print("Current restartCount: ");
+		Serial.println(firebaseData.intData());
+		restartCount = firebaseData.intData() + 1;
+	}
+	else
+	{
+#ifdef LOCAL_DEBUG
+		Serial.println("Failed to get restart_count");
+#endif // LOCAL_DEBUG
+	}
+
+	// Update restart Count
+	Firebase.setInt(firebaseSendData, PATH_BASE + PATH_DEBUG + "restart_count", restartCount);
+
 	sendDebugMessage("Controller connected to Firebase.");
 
 	delay(500);
 
 	// Fetch Auto Close Options
-	FirebaseJson jsonObject;
 	if (Firebase.get(firebaseData, PATH_BASE + PATH_DEFAULTS + PATH_AUTO_CLOSE_OPTIONS))
 	{
 #ifdef LOCAL_DEBUG
@@ -358,8 +380,6 @@ void handleNewAction(String actionStr)
 	Serial.print("Received Action: ");
 	Serial.println(actionStr);
 #endif // LOCAL_DEBUG
-	Serial.print("Received Action: ");
-	Serial.println(actionStr);
 
 
 	if (actionStr == ACTION_CLOSE)
@@ -459,6 +479,6 @@ void sendDebugMessage(String debugMessage)
 	FirebaseJson debugObject;
 	debugObject.add("message", debugMessage);
 	/*Firebase.pushJSON(firebaseSendData, PATH_BASE + PATH_DEBUG, debugObject);*/
-	sendToFirebase(PATH_BASE + PATH_DEBUG + millis(), debugObject);
+	sendToFirebase(PATH_BASE + PATH_DEBUG + restartCount + "/" + millis() , debugObject);
 #endif // !LOCAL_DEBUG
 }
