@@ -5,8 +5,10 @@
 */
 
 // the setup function runs once when you press reset or power the board
+#include <ESP8266WiFiMulti.h>
+#include <ESP8266WiFi.h>
 #include "smart-garage-arduino.h"
-//#define LOCAL_DEBUG true						// Uncomment to restrict debug statements to local Serial Port
+#define LOCAL_DEBUG true						// Uncomment to restrict debug statements to local Serial Port
 
 String garageStatus = STATUS_CLOSED;			// Global variable for current state of garage door
 GarageAction action;							// Global variable for received actions		
@@ -20,6 +22,9 @@ int timeoutCounter = 0;							// Used to try and fix stupid bug with callback mi
 
 FirebaseData firebaseData;						// FirebaseESP8266 data object
 FirebaseData firebaseSendData;					// FirebaseESP8266 data object used to send updates
+
+ESP8266WiFiMulti WiFiMulti;
+
 
 void setup() 
 {
@@ -56,13 +61,18 @@ void setup()
 	connectToWifi();
 	Serial.println("Connected!");
 
-	Serial.println("Connecting to Firebase...");
-	connectToFirebase();
-	Serial.println("Conntected!");
+	connectToServer();
+
+	//Serial.println("Connecting to Firebase...");
+	//connectToFirebase();
+	//Serial.println("Conntected!");
 }
+
 
 void connectToWifi() 
 {
+	WiFi.mode(WIFI_STA);
+	WiFiMulti.addAP("HawkswayBase", "F4d29095dc");
 	WiFi.begin("HawkswayBase", "F4d29095dc");
 
 	while (WiFi.status() != WL_CONNECTED) 
@@ -77,168 +87,173 @@ void connectToWifi()
 	Serial.println();
 }
 
-void connectToFirebase() 
+void connectToServer()
 {
-	Firebase.begin(FIREBASE_HOST, FIREBASE_AUTH);
-	Firebase.reconnectWiFi(true);
-	Firebase.setMaxRetry(firebaseData, 4);
-	firebaseData.setResponseSize(1024);
 
-	// Fetch Restart Count
-	FirebaseJson jsonObject;
-	if (Firebase.get(firebaseData, PATH_BASE + PATH_DEBUG + "restart_count"))
-	{
-#ifdef LOCAL_DEBUG
-		Serial.print("Current restartCount: ");
-		Serial.println(firebase.intData());
-#endif // LOCAL_DEBUG
-		Serial.print("Current restartCount: ");
-		Serial.println(firebaseData.intData());
-		restartCount = firebaseData.intData() + 1;
-	}
-	else
-	{
-#ifdef LOCAL_DEBUG
-		Serial.println("Failed to get restart_count");
-#endif // LOCAL_DEBUG
-	}
-
-	// Update restart Count
-	Firebase.setInt(firebaseSendData, PATH_BASE + PATH_DEBUG + "restart_count", restartCount);
-
-	sendDebugMessage("Controller connected to Firebase.");
-
-	delay(500);
-
-	// Fetch Auto Close Options
-	if (Firebase.get(firebaseData, PATH_BASE + PATH_DEFAULTS + PATH_AUTO_CLOSE_OPTIONS))
-	{
-#ifdef LOCAL_DEBUG
-		Serial.println("Fetching Initial Auto Close Options");
-#endif // LOCAL_DEBUG
-
-		jsonObject.setJsonData(firebaseData.jsonString());
-		handleOptionsChange(jsonObject);
-		isInitialAutoCloseOptions = false;
-	}
-	else
-	{
-		String debugMessage = "Unable to fetch Initial Auto Close Options: ";
-		debugMessage += firebaseData.errorReason();
-		sendDebugMessage(debugMessage);
-		isInitialAutoCloseOptions = false;
-	}
-
-	// Begin Streaming
-	Serial.print("Streaming to: ");
-	Serial.println(String(PATH_BASE + "controller"));
-
-	Firebase.setStreamCallback(firebaseData, streamCallback, streamTimeoutCallback);
-
-	if (!Firebase.beginStream(firebaseData, PATH_BASE + "controller"))
-	{
-		Serial.println(firebaseData.errorReason());
-		ESP.reset();
-	}
 }
 
-void streamTimeoutCallback(bool timeout)
-{
-	if (timeout) {
-		//Stream timeout occurred
-		Serial.println("Stream timeout, resume streaming...");
-		FirebaseJson timeoutObj;
-		timeoutObj.add("counter", ++timeoutCounter);
-		sendToFirebase(PATH_BASE + "controller/timeout_counter", timeoutObj);
-	}
-}
+//void connectToFirebase() 
+//{
+//	Firebase.begin(FIREBASE_HOST, FIREBASE_AUTH);
+//	Firebase.reconnectWiFi(true);
+//	Firebase.setMaxRetry(firebaseData, 4);
+//	firebaseData.setResponseSize(1024);
+//
+//	// Fetch Restart Count
+//	FirebaseJson jsonObject;
+//	if (Firebase.get(firebaseData, PATH_BASE + PATH_DEBUG + "restart_count"))
+//	{
+//#ifdef LOCAL_DEBUG
+//		Serial.print("Current restartCount: ");
+//		Serial.println(firebase.intData());
+//#endif // LOCAL_DEBUG
+//		Serial.print("Current restartCount: ");
+//		Serial.println(firebaseData.intData());
+//		restartCount = firebaseData.intData() + 1;
+//	}
+//	else
+//	{
+//#ifdef LOCAL_DEBUG
+//		Serial.println("Failed to get restart_count");
+//#endif // LOCAL_DEBUG
+//	}
+//
+//	// Update restart Count
+//	Firebase.setInt(firebaseSendData, PATH_BASE + PATH_DEBUG + "restart_count", restartCount);
+//
+//	sendDebugMessage("Controller connected to Firebase.");
+//
+//	delay(500);
+//
+//	// Fetch Auto Close Options
+//	if (Firebase.get(firebaseData, PATH_BASE + PATH_DEFAULTS + PATH_AUTO_CLOSE_OPTIONS))
+//	{
+//#ifdef LOCAL_DEBUG
+//		Serial.println("Fetching Initial Auto Close Options");
+//#endif // LOCAL_DEBUG
+//
+//		jsonObject.setJsonData(firebaseData.jsonString());
+//		handleOptionsChange(jsonObject);
+//		isInitialAutoCloseOptions = false;
+//	}
+//	else
+//	{
+//		String debugMessage = "Unable to fetch Initial Auto Close Options: ";
+//		debugMessage += firebaseData.errorReason();
+//		sendDebugMessage(debugMessage);
+//		isInitialAutoCloseOptions = false;
+//	}
+//
+//	// Begin Streaming
+//	Serial.print("Streaming to: ");
+//	Serial.println(String(PATH_BASE + "controller"));
+//
+//	Firebase.setStreamCallback(firebaseData, streamCallback, streamTimeoutCallback);
+//
+//	if (!Firebase.beginStream(firebaseData, PATH_BASE + "controller"))
+//	{
+//		Serial.println(firebaseData.errorReason());
+//		ESP.reset();
+//	}
+//}
+
+//void streamTimeoutCallback(bool timeout)
+//{
+//	if (timeout) {
+//		//Stream timeout occurred
+//		Serial.println("Stream timeout, resume streaming...");
+//		FirebaseJson timeoutObj;
+//		timeoutObj.add("counter", ++timeoutCounter);
+//		sendToFirebase(PATH_BASE + "controller/timeout_counter", timeoutObj);
+//	}
+//}
 
 // Callback Logic:
 //  Ensure data type is JSON -> return error if not
 //  If this is the first event -> Handle first time event
 //	Else If this is an action event -> Handle new action event
 //	Else If this is an options event -> Hanle new options
-void streamCallback(StreamData data)
-{
-	String eventPath = data.dataPath();
-#ifdef LOCAL_DEBUG
-	Serial.println("Stream Data1 available...");
-	Serial.println("STREAM PATH: " + data.streamPath());
-	Serial.println("EVENT PATH: " + data.dataPath());
-	Serial.println("DATA TYPE: " + data.dataType());
-	Serial.println("EVENT TYPE: " + data.eventType());
-#endif // LOCAL_DEBUG
-	Serial.println("Stream Data1 available...");
-	Serial.println("STREAM PATH: " + data.streamPath());
-	Serial.println("EVENT PATH: " + data.dataPath());
-	Serial.println("DATA TYPE: " + data.dataType());
-	Serial.println("EVENT TYPE: " + data.eventType());
+//void streamCallback(StreamData data)
+//{
+//	String eventPath = data.dataPath();
+//#ifdef LOCAL_DEBUG
+//	Serial.println("Stream Data1 available...");
+//	Serial.println("STREAM PATH: " + data.streamPath());
+//	Serial.println("EVENT PATH: " + data.dataPath());
+//	Serial.println("DATA TYPE: " + data.dataType());
+//	Serial.println("EVENT TYPE: " + data.eventType());
+//#endif // LOCAL_DEBUG
+//	Serial.println("Stream Data1 available...");
+//	Serial.println("STREAM PATH: " + data.streamPath());
+//	Serial.println("EVENT PATH: " + data.dataPath());
+//	Serial.println("DATA TYPE: " + data.dataType());
+//	Serial.println("EVENT TYPE: " + data.eventType());
+//
+//	// Handle null data type (action acknowledgements)
+//	if (data.dataType() == "null")
+//	{
+//#ifdef LOCAL_DEBUG
+//		Serial.println("Ignoring acknowledgement...");
+//#endif // LOCAL_DEBUG
+//		return;
+//	}
+//
+//	String debugMessage;
+//	// Handle invalid type error
+//	if (data.dataType() != "json") 
+//	{
+//		debugMessage = "Recieved data that was not of type JSON. (type = ";
+//		debugMessage += data.dataType();
+//		debugMessage += ")";
+//		sendDebugMessage(debugMessage);
+//		return;
+//	}
+//
+//	FirebaseJson jsonObject;
+//	jsonObject.setJsonData(data.jsonString());
+//	FirebaseJsonData jsonData;
+//
+//	// Handle new action
+//	if (jsonObject.get(jsonData, "a_timestamp"))
+//	{
+//		jsonObject.get(jsonData, "type");
+//		sendDebugMessage("Handling new action");
+//		handleNewAction(jsonData.stringValue);
+//	}
+//	// Handle new Auto Close Options
+//	else if (jsonObject.get(jsonData, "o_timestamp"))
+//	{
+//		sendDebugMessage("Handling Auto Close Options change");
+//		handleOptionsChange(jsonObject);
+//	}
+//	// Ignore defaults responses
+//	else if (jsonObject.get(jsonData, "timeout_counter") || jsonObject.get(jsonData, "defaults") || eventPath.indexOf("defaults") > 0)
+//	{
+//		Serial.println("Igoring defaults response...");
+//#ifdef LOCAL_DEBUG
+//		Serial.println("Igoring defaults response...");
+//#endif // LOCAL_DEBUG
+//	}
+//	// Error: Unknown response
+//	else 
+//	{
+//		sendDebugMessage("Recieved unknown JSON response...");
+//	}
+//}
 
-	// Handle null data type (action acknowledgements)
-	if (data.dataType() == "null")
-	{
-#ifdef LOCAL_DEBUG
-		Serial.println("Ignoring acknowledgement...");
-#endif // LOCAL_DEBUG
-		return;
-	}
-
-	String debugMessage;
-	// Handle invalid type error
-	if (data.dataType() != "json") 
-	{
-		debugMessage = "Recieved data that was not of type JSON. (type = ";
-		debugMessage += data.dataType();
-		debugMessage += ")";
-		sendDebugMessage(debugMessage);
-		return;
-	}
-
-	FirebaseJson jsonObject;
-	jsonObject.setJsonData(data.jsonString());
-	FirebaseJsonData jsonData;
-
-	// Handle new action
-	if (jsonObject.get(jsonData, "a_timestamp"))
-	{
-		jsonObject.get(jsonData, "type");
-		sendDebugMessage("Handling new action");
-		handleNewAction(jsonData.stringValue);
-	}
-	// Handle new Auto Close Options
-	else if (jsonObject.get(jsonData, "o_timestamp"))
-	{
-		sendDebugMessage("Handling Auto Close Options change");
-		handleOptionsChange(jsonObject);
-	}
-	// Ignore defaults responses
-	else if (jsonObject.get(jsonData, "timeout_counter") || jsonObject.get(jsonData, "defaults") || eventPath.indexOf("defaults") > 0)
-	{
-		Serial.println("Igoring defaults response...");
-#ifdef LOCAL_DEBUG
-		Serial.println("Igoring defaults response...");
-#endif // LOCAL_DEBUG
-	}
-	// Error: Unknown response
-	else 
-	{
-		sendDebugMessage("Recieved unknown JSON response...");
-	}
-}
-
-void sendToFirebase(const String path, FirebaseJson& obj) 
-{
-#ifdef LOCAL_DEBUG
-	Serial.print("Sending object to: ");
-	Serial.println(path);
-#endif // LOCAL_DEBUG
-
-	if (!Firebase.setJSON(firebaseSendData, path, obj)) 
-	{
-		Serial.print("sendToFirebase: FAILED - ");
-		Serial.println(firebaseSendData.errorReason());
-	}
-}
+//void sendToFirebase(const String path, FirebaseJson& obj) 
+//{
+//#ifdef LOCAL_DEBUG
+//	Serial.print("Sending object to: ");
+//	Serial.println(path);
+//#endif // LOCAL_DEBUG
+//
+//	if (!Firebase.setJSON(firebaseSendData, path, obj)) 
+//	{
+//		Serial.print("sendToFirebase: FAILED - ");
+//		Serial.println(firebaseSendData.errorReason());
+//	}
+//}
 
 void toggleGarageDoor() 
 {
@@ -286,16 +301,16 @@ void loop()
 	}
 }
 
-void handleFirebaseFailure()
-{
-	String errStr = "Streaming Error: ";
-	errStr += firebaseData.errorReason();
-	Serial.println(errStr);
-
-	sendDebugMessage(errStr);
-
-	ESP.restart();
-}
+//void handleFirebaseFailure()
+//{
+//	String errStr = "Streaming Error: ";
+//	errStr += firebaseData.errorReason();
+//	Serial.println(errStr);
+//
+//	sendDebugMessage(errStr);
+//
+//	ESP.restart();
+//}
 
 String getStatus() 
 {
@@ -357,9 +372,9 @@ void updateStatus(String newStatus)
 	garageStatus = newStatus;
 
 	// Update Firebase status
-	FirebaseJson newObj;
-	newObj.add("type", garageStatus);
-	sendToFirebase(PATH_BASE + "status", newObj);
+	//FirebaseJson newObj;
+	//newObj.add("type", garageStatus);
+	//sendToFirebase(PATH_BASE + "status", newObj);
 }
 
 
@@ -367,13 +382,13 @@ void sendAutoCloseWarning()
 {
 	autoClose.warningTime = 0;
 
-	FirebaseJson warningObject;
-	warningObject.add("timeout", (double) autoCloseOptions.warningTimeout);
-	warningObject.add("timestamp", (double) millis());
+	//FirebaseJson warningObject;
+	//warningObject.add("timeout", (double) autoCloseOptions.warningTimeout);
+	//warningObject.add("timestamp", (double) millis());
 
-	sendToFirebase(PATH_BASE + "notifications/auto_close_warning", warningObject);
+	//sendToFirebase(PATH_BASE + "notifications/auto_close_warning", warningObject);
 
-	sendDebugMessage("Sending warning message regarding auto close.");
+	//sendDebugMessage("Sending warning message regarding auto close.");
 }
 
 void autoCloseDoor()
@@ -445,47 +460,47 @@ void handleNewAction(String actionStr)
 		sendDebugMessage(debugMessage);
 	}
 
-	Firebase.deleteNode(firebaseSendData, PATH_BASE + "controller/action");
+	//Firebase.deleteNode(firebaseSendData, PATH_BASE + "controller/action");
 }
 
-void handleOptionsChange(FirebaseJson& options)
-{
-	FirebaseJsonData optionData;
-
-	if (options.get(optionData, "enabled"))
-		autoCloseOptions.enabled = optionData.boolValue;
-	if (options.get(optionData, "timeout"))
-		autoCloseOptions.timeout = optionData.doubleValue;
-	if (options.get(optionData, "warningTimeout"))
-		autoCloseOptions.warningTimeout = optionData.doubleValue;
-	if (options.get(optionData, "warningEnabled"))
-		autoCloseOptions.warningEnabled = optionData.boolValue;
-
-	if (!isInitialAutoCloseOptions) {
-		Firebase.deleteNode(firebaseSendData, PATH_BASE + "controller/auto_close_options");
-
-		FirebaseJson defaultsObject;
-		defaultsObject.add("enabled", autoCloseOptions.enabled);
-		defaultsObject.add("timeout", (double) autoCloseOptions.timeout);
-		defaultsObject.add("warningEnabled", autoCloseOptions.warningEnabled);
-		defaultsObject.add("warningTimeout", (double) autoCloseOptions.warningTimeout);
-
-		sendToFirebase(PATH_BASE + PATH_DEFAULTS + PATH_AUTO_CLOSE_OPTIONS, defaultsObject);
-	}
-
-#ifdef LOCAL_DEBUG
-	Serial.println("AutoClose Options:");
-	Serial.print("\tenabled: ");
-	Serial.println(autoCloseOptions.enabled);
-	Serial.print("\ttimeout: ");
-	Serial.println(autoCloseOptions.timeout);
-	Serial.print("\twarningEnabled: ");
-	Serial.println(autoCloseOptions.warningEnabled);
-	Serial.print("\twarningTimeout: ");
-	Serial.println(autoCloseOptions.warningTimeout);
-#endif // LCOAL_DEBUG
-}
-
+//void handleOptionsChange(FirebaseJson& options)
+//{
+//	FirebaseJsonData optionData;
+//
+//	if (options.get(optionData, "enabled"))
+//		autoCloseOptions.enabled = optionData.boolValue;
+//	if (options.get(optionData, "timeout"))
+//		autoCloseOptions.timeout = optionData.doubleValue;
+//	if (options.get(optionData, "warningTimeout"))
+//		autoCloseOptions.warningTimeout = optionData.doubleValue;
+//	if (options.get(optionData, "warningEnabled"))
+//		autoCloseOptions.warningEnabled = optionData.boolValue;
+//
+//	if (!isInitialAutoCloseOptions) {
+//		Firebase.deleteNode(firebaseSendData, PATH_BASE + "controller/auto_close_options");
+//
+//		FirebaseJson defaultsObject;
+//		defaultsObject.add("enabled", autoCloseOptions.enabled);
+//		defaultsObject.add("timeout", (double) autoCloseOptions.timeout);
+//		defaultsObject.add("warningEnabled", autoCloseOptions.warningEnabled);
+//		defaultsObject.add("warningTimeout", (double) autoCloseOptions.warningTimeout);
+//
+//		sendToFirebase(PATH_BASE + PATH_DEFAULTS + PATH_AUTO_CLOSE_OPTIONS, defaultsObject);
+//	}
+//
+//#ifdef LOCAL_DEBUG
+//	Serial.println("AutoClose Options:");
+//	Serial.print("\tenabled: ");
+//	Serial.println(autoCloseOptions.enabled);
+//	Serial.print("\ttimeout: ");
+//	Serial.println(autoCloseOptions.timeout);
+//	Serial.print("\twarningEnabled: ");
+//	Serial.println(autoCloseOptions.warningEnabled);
+//	Serial.print("\twarningTimeout: ");
+//	Serial.println(autoCloseOptions.warningTimeout);
+//#endif // LCOAL_DEBUG
+//}
+//
 // Debug
 void sendDebugMessage(String debugMessage)
 {
