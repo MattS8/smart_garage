@@ -6,7 +6,9 @@
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        tools:context=".MainActivity">
+        tools:context=".MainActivity"
+        android:clipChildren="false"
+        >
 
         <ImageButton
             android:id="@+id/btnOptions"
@@ -67,23 +69,33 @@
 
             tools:tint="@color/colorOpen" />
 
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
+        <com.sanojpunchihewa.glowbutton.GlowButton
             android:id="@+id/btnOpen"
-            style="@style/Widget.AppCompat.Button.Colored"
+            android:layout_width="100dp"
+            android:layout_height="0dp"
+            android:drawableTop="@drawable/ic_expand_less_24dp"
+            app:buttonColor="@color/colorOpenBorder"
+            app:glowColor="@color/colorOpen"
+            app:cornerRadius="1000dp"
+            app:pressedGlowSize="15dp"
+            android:paddingTop="20dp"
+            android:text="@string/open"
+            android:textAllCaps="true"
+            android:textColor="@color/white"
+            app:layout_constraintDimensionRatio="1:1"
+
+            android:foreground="@drawable/ripple_on_touch"
+            android:stateListAnimator="@animator/lift_on_touch"
+
             android:clickable="true"
             android:focusable="true"
+
             android:layout_marginStart="32dp"
             android:layout_marginLeft="32dp"
             android:layout_marginEnd="32dp"
             android:layout_marginRight="32dp"
             android:layout_marginBottom="32dp"
-            android:minHeight="75dp"
-            android:minWidth="150dp"
 
-            android:backgroundTint="@color/colorOpen"
             app:layout_constraintBottom_toTopOf="@+id/btnClose"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_bias="0.5"
@@ -91,61 +103,125 @@
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintVertical_bias="0.75"
             app:layout_constraintVertical_chainStyle="packed"
-            >
+            />
 
-            <ImageView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:src="@drawable/ic_expand_less_24dp"
-                />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:fontFamily="sans-serif-medium"
-                android:text="@string/open"
-                android:textAllCaps="true"
-                android:textColor="@color/white" />
-
-        </LinearLayout>
-
-        <LinearLayout
+        <com.sanojpunchihewa.glowbutton.GlowButton
             android:id="@+id/btnClose"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            style="@style/Widget.AppCompat.Button.Colored"
+            android:layout_width="100dp"
+            android:layout_height="0dp"
+            android:drawableTop="@drawable/ic_expand_more_24dp"
+            android:paddingTop="20dp"
+            android:text="@string/close"
+            android:textAllCaps="true"
+            android:textColor="@color/white"
+
+            android:foreground="@drawable/ripple_on_touch"
+            android:stateListAnimator="@animator/lift_on_touch"
+
+
+            app:buttonColor="@color/colorCloseBorder"
+            app:glowColor="@color/colorClose"
+            app:cornerRadius="1000dp"
+
+            app:pressedGlowSize="15dp"
+
+            app:layout_constraintDimensionRatio="1:1"
+
+            android:clickable="true"
+            android:focusable="true"
+
             android:layout_marginStart="32dp"
             android:layout_marginLeft="32dp"
             android:layout_marginEnd="32dp"
             android:layout_marginRight="32dp"
-            android:minHeight="75dp"
-            android:minWidth="150dp"
-            android:text="@string/close"
-            android:textColor="@color/white"
-            android:backgroundTint="@color/colorClose"
+            android:layout_marginBottom="32dp"
 
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_bias="0.5"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/btnOpen"
-            >
+            />
 
-            <ImageView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:src="@drawable/ic_expand_more_24dp"
-                />
+<!--        <LinearLayout-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:orientation="vertical"-->
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:fontFamily="sans-serif-medium"
-                android:text="@string/close"
-                android:textAllCaps="true"
-                android:textColor="@color/white" />
-        </LinearLayout>
+<!--            style="@style/Widget.AppCompat.Button.Colored"-->
+<!--            android:clickable="true"-->
+<!--            android:focusable="true"-->
+<!--            android:layout_marginStart="32dp"-->
+<!--            android:layout_marginLeft="32dp"-->
+<!--            android:layout_marginEnd="32dp"-->
+<!--            android:layout_marginRight="32dp"-->
+<!--            android:layout_marginBottom="32dp"-->
+<!--            android:minHeight="75dp"-->
+<!--            android:minWidth="150dp"-->
+
+<!--            android:backgroundTint="@color/colorOpen"-->
+<!--            app:layout_constraintBottom_toTopOf="@+id/btnClose"-->
+<!--            app:layout_constraintEnd_toEndOf="parent"-->
+<!--            app:layout_constraintHorizontal_bias="0.5"-->
+<!--            app:layout_constraintStart_toStartOf="parent"-->
+<!--            app:layout_constraintTop_toTopOf="parent"-->
+<!--            app:layout_constraintVertical_bias="0.75"-->
+<!--            app:layout_constraintVertical_chainStyle="packed"-->
+<!--            >-->
+
+<!--            <ImageView-->
+<!--                android:layout_width="wrap_content"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:src="@drawable/ic_expand_less_24dp"-->
+<!--                />-->
+
+<!--            <TextView-->
+<!--                android:layout_width="wrap_content"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:fontFamily="sans-serif-medium"-->
+<!--                android:text="@string/open"-->
+<!--                android:textAllCaps="true"-->
+<!--                android:textColor="@color/white" />-->
+
+<!--        </LinearLayout>-->
+
+<!--        <LinearLayout-->
+<!--            android:id="@+id/btnClose"-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:orientation="vertical"-->
+<!--            style="@style/Widget.AppCompat.Button.Colored"-->
+<!--            android:layout_marginStart="32dp"-->
+<!--            android:layout_marginLeft="32dp"-->
+<!--            android:layout_marginEnd="32dp"-->
+<!--            android:layout_marginRight="32dp"-->
+<!--            android:minHeight="75dp"-->
+<!--            android:minWidth="150dp"-->
+<!--            android:text="@string/close"-->
+<!--            android:textColor="@color/white"-->
+<!--            android:backgroundTint="@color/colorClose"-->
+
+<!--            app:layout_constraintBottom_toBottomOf="parent"-->
+<!--            app:layout_constraintEnd_toEndOf="parent"-->
+<!--            app:layout_constraintHorizontal_bias="0.5"-->
+<!--            app:layout_constraintStart_toStartOf="parent"-->
+<!--            app:layout_constraintTop_toBottomOf="@+id/btnOpen"-->
+<!--            >-->
+
+<!--            <ImageView-->
+<!--                android:layout_width="wrap_content"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:src="@drawable/ic_expand_more_24dp"-->
+<!--                />-->
+
+<!--            <TextView-->
+<!--                android:layout_width="wrap_content"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:fontFamily="sans-serif-medium"-->
+<!--                android:text="@string/close"-->
+<!--                android:textAllCaps="true"-->
+<!--                android:textColor="@color/white" />-->
+<!--        </LinearLayout>-->
 
 <!--        <Button-->
 <!--            android:id="@+id/btnOpen"-->

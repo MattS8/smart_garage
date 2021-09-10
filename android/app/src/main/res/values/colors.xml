@@ -5,12 +5,15 @@
     <color name="colorAccent">#2c3e50</color>
     <color name="colorBackground">#ecf0f1</color>
     <color name="colorBackgroundDark">#212121</color>
-    <color name="colorClose">#008a00</color>
-    <color name="colorClosing">#60a917</color>
-    <color name="colorOpen">#a20025</color>
-    <color name="colorOpening">#a0522d</color>
+    <color name="colorOpen">#008a00</color>
+    <color name="colorOpenBorder">#006300</color>
+    <color name="colorOpening">#60a917</color>
+    <color name="colorClose">#a20025</color>
+    <color name="colorCloseBorder">#690018</color>
+    <color name="colorClosing">#a0522d</color>
     <color name="colorPaused">#a20025</color>
     <color name="warningYellow">#ffeb3b</color>
+    <color name="widgetBackground">#AA1b1b1b</color>
 
 
     <!-- OVERWRITE THESE COLORS FOR A DARK THEME -->

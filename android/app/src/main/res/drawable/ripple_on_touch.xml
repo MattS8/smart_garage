@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ripple xmlns:android="http://schemas.android.com/apk/res/android"
+    android:color="?android:colorControlHighlight"
+    android:radius="46dp"
+    >
+    <item android:id="@android:id/mask">
+        <shape
+            android:shape="oval"
+            android:dither="true"
+            >
+
+            <padding
+                android:bottom="@dimen/garage_button_ripple_padding"
+                android:top="@dimen/garage_button_ripple_padding"
+                android:left="@dimen/garage_button_ripple_padding"
+                android:right="@dimen/garage_button_ripple_padding"
+                />
+            <solid android:color="@android:color/white"/>
+        </shape>
+    </item>
+</ripple>
