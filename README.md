@@ -19,7 +19,7 @@ The code uses a state driven implementation to constantly check the state of the
 2. Listen for and respond to action requests from the Firebase back-end.
 
 ### Observe Garage Status
-Within the loop function of the Arduino code, the hardware is constantly polled for the status of the **open pin** and **closed pin**. These two pins are exclusively set to HIGH or LOW depending on the position of the garage door. Whenever a change is state is detected, the ESP8266 sends a status update to Firebase. If the status changes from a close to an OPEN state and the device has *auto close* enabled, the code will note the time and send a warning object to Firebase and/or a close command in the future.
+Within the loop function of the Arduino code, the hardware is constantly polled for the status of the **open pin** and **closed pin**. These two pins are exclusively set to HIGH or LOW depending on the position of the garage door. Whenever a change of state is detected, the ESP8266 sends a status update to Firebase. If the status changes from a close to an OPEN state and the device has *auto close* enabled, the code will note the time and send a warning object to Firebase and/or a close command in the future.
 
 ### Respond to Firebase Data
 Upon boot-up of the physical device, a listener is attached to the garage door's endpoint in the back-end solution. This listener will send *actions* to the device in a consistent structure. Currently supported actions are:
@@ -30,8 +30,8 @@ Upon boot-up of the physical device, a listener is attached to the garage door's
 
 ## Firebase
 Firebase is used to implement a noSQL database solution. Each unique garage door is given its own endpoint from which listeners can be attached to detect changes (from either the android app or the Arduino devices). Each endpoint has three subsection endpoints:
-1. Action - This endpoint is used by the Android App to notify a garage door of some user input. It is used by the Arduino device to do some action.
-2. Status - This endpoint is used by the Android App to listen for changes to the garage door's status. It is used by the Arduino device to notify of a change to the garage door's position.
+1. Action - This endpoint is used by the Android App to notify a garage door of some user input. It is used by the Arduino device to listen for some action to do.
+2. Status - This endpoint is used by the Android App to listen for changes to the garage door's status. It is used by the Arduino device to notify changes to the garage door's status.
 3. Options - This endpoint is used to communicate extra options that a user can set for a garage door, such as whether or not to automatically close the garage door after a certain amount of time and whether or not to send a warning before auto close.
 
 ## Android Application
